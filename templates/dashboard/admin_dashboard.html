@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4 text-center">
+        <h2>Admin Dashboard</h2>
+        <p class="text-muted">Manage Courses, Teachers, and Students</p>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <!-- Course Creation & List -->
+    <div class="col-md-4">
+        <div class="card mb-4 h-100">
+            <div class="card-header">Create New Course</div>
+            <div class="card-body">
+                <!-- Keep Standard POST for File Upload Convenience for now -->
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-dark mt-3 w-100">Create Course</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header">All Courses</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Photo</th>
+                                <th>Title</th>
+                                <th>Description</th>
+                                <th>Teachers</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courses-list-body">
+                            <!-- JS will populate -->
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <div class="spinner-border text-primary"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<!-- Users Lists -->
+<div class="row">
+    <!-- Teachers List -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Teachers List</span>
+                <span id="teachers-count" class="badge bg-dark">0 Total</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachers-list-body">
+                            <!-- JS will populate -->
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <div class="spinner-border text-primary"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students List -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Students List</span>
+                <span id="students-count" class="badge bg-dark">0 Total</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-list-body">
+                            <!-- JS will populate -->
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <div class="spinner-border text-primary"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        Promise.all([fetchCourses(), fetchTeachers(), fetchStudents()]);
+    });
+
+    async function fetchCourses() {
+        try {
+            const response = await fetch('/api/courses/');
+            const courses = await response.json();
+            const tbody = document.getElementById('courses-list-body');
+            tbody.innerHTML = '';
+
+            if (courses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No courses yet.</td></tr>';
+                return;
+            }
+
+            courses.forEach(course => {
+                const photoUrl = course.photo || ''; // API includes full URL if serialized correctly, or null
+                const photoHtml = photoUrl ?
+                    `<img src="${photoUrl}" alt="${course.title}" style="height: 40px;" class="rounded">` :
+                    '<span class="text-muted small">No IMG</span>';
+
+                // Use teacher_count from API
+                const teacherCount = course.teacher_count || 0;
+
+                const html = `
+                <tr>
+                    <td>${photoHtml}</td>
+                    <td class="fw-bold">${course.title}</td>
+                    <td class="text-muted small">${course.description ? course.description.substring(0, 50) + '...' : ''}</td>
+                    <td><span class="badge bg-secondary rounded-pill">${teacherCount}</span></td>
+                </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+        }
+    }
+
+    async function fetchTeachers() {
+        try {
+            const response = await fetch('/api/users/?role=teacher');
+            const data = await response.json();
+            // API pagination handling: if paginated, data.results. If not, data.
+            const teachers = data.results ? data.results : data;
+
+            const tbody = document.getElementById('teachers-list-body');
+            document.getElementById('teachers-count').innerText = `${teachers.length} Total`;
+            tbody.innerHTML = '';
+
+            if (teachers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No teachers found.</td></tr>';
+                return;
+            }
+
+            teachers.forEach(teacher => {
+                const html = `
+                <tr>
+                    <td class="fw-bold">${teacher.username}</td>
+                    <td class="small text-muted">${teacher.email}</td>
+                </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        } catch (error) {
+            console.error('Error fetching teachers:', error);
+        }
+    }
+
+    async function fetchStudents() {
+        try {
+            const response = await fetch('/api/users/?role=student');
+            const data = await response.json();
+            const students = data.results ? data.results : data;
+
+            const tbody = document.getElementById('students-list-body');
+            document.getElementById('students-count').innerText = `${students.length} Total`;
+            tbody.innerHTML = '';
+
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No students found.</td></tr>';
+                return;
+            }
+
+            students.forEach(student => {
+                const html = `
+                <tr>
+                    <td class="fw-bold">${student.username}</td>
+                    <td class="small text-muted">${student.email}</td>
+                </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        } catch (error) {
+            console.error('Error fetching students:', error);
+        }
+    }
+</script>
+{% endblock %}

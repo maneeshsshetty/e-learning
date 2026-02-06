@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4 text-center">
+        <h2>Teacher Dashboard</h2>
+        <p class="text-muted">Manage your teaching schedule</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Available Courses Column -->
+    <div class="col-md-5">
+        <div class="card mb-4">
+            <div class="card-header">Available Courses</div>
+            <div class="card-body p-0">
+                <ul id="available-courses-list" class="list-group list-group-flush">
+                    <!-- JS will populate -->
+                    <li class="list-group-item text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Classes Column -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">My Classes</div>
+            <div class="card-body">
+                <div class="accordion accordion-flush" id="myOfferingsAccordion">
+                    <!-- JS will populate -->
+                    <div class="text-center p-3">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+                <div id="no-classes-msg" class="text-muted text-center py-4 d-none">
+                    You have not selected any subjects yet.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        Promise.all([fetchCourses(), fetchMyOfferings()]);
+    });
+
+    let myTeachingCourseIds = [];
+
+    async function fetchMyOfferings() {
+        try {
+            // New Endpoint we created: /api/offerings/?teacher=ME (handled by backend logic)
+            const response = await fetch('/api/offerings/');
+            const offerings = await response.json();
+
+            const listContainer = document.getElementById('myOfferingsAccordion');
+            const noMsg = document.getElementById('no-classes-msg');
+            listContainer.innerHTML = '';
+
+            if (offerings.length === 0) {
+                noMsg.classList.remove('d-none');
+            } else {
+                noMsg.classList.add('d-none');
+            }
+
+            myTeachingCourseIds = offerings.map(o => o.course); // Store IDs to check against available courses
+
+            offerings.forEach(offering => {
+                const html = `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading${offering.id}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse${offering.id}">
+                            <strong>${offering.course_title}</strong>
+                        </button>
+                    </h2>
+                    <div id="collapse${offering.id}" class="accordion-collapse collapse"
+                        data-bs-parent="#myOfferingsAccordion">
+                        <div class="accordion-body">
+                            <!-- Keeping Standard POST for Simplicity, user can upgrade to API POST later -->
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="offering_id" value="${offering.id}">
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Google Meet Link</label>
+                                    <input type="url" name="meet_link" class="form-control"
+                                        value="${offering.meet_link || ''}"
+                                        placeholder="https://meet.google.com/..." required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Class Description</label>
+                                    <textarea name="class_description" class="form-control" rows="3"
+                                        placeholder="Time, agenda, prerequisites...">${offering.class_description || ''}</textarea>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" name="update_details" class="btn btn-dark btn-sm">Save Details</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                `;
+                listContainer.insertAdjacentHTML('beforeend', html);
+            });
+
+            // Re-render courses to update "Teaching" badges
+            renderCoursesList(window.cachedCourses || []);
+
+        } catch (error) {
+            console.error('Error fetching offerings:', error);
+        }
+    }
+
+    async function fetchCourses() {
+        try {
+            const response = await fetch('/api/courses/');
+            const courses = await response.json();
+            window.cachedCourses = courses; // Cache for re-use
+            renderCoursesList(courses);
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+        }
+    }
+
+    function renderCoursesList(courses) {
+        const listContainer = document.getElementById('available-courses-list');
+        listContainer.innerHTML = '';
+
+        if (courses.length === 0) {
+            listContainer.innerHTML = '<li class="list-group-item text-center text-muted">No courses available.</li>';
+            return;
+        }
+
+        courses.forEach(course => {
+            const isTeaching = myTeachingCourseIds.includes(course.id);
+
+            let actionHtml = '';
+            if (isTeaching) {
+                actionHtml = '<span class="badge bg-dark rounded-pill">Teaching</span>';
+            } else {
+                // Standard POST Form for Opting In
+                actionHtml = `
+                <form method="post" action="{% url 'teacher_dashboard' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="course_id" value="${course.id}">
+                    <button type="submit" name="opt_in" class="btn btn-sm btn-outline-dark">Teach this</button>
+                </form>
+                `;
+            }
+
+            const html = `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                ${course.title}
+                <div>${actionHtml}</div>
+            </li>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', html);
+        });
+    }
+</script>
+{% endblock %}
