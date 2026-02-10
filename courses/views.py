@@ -45,7 +45,7 @@ Best regards,
 Learning Platform Team
 """
             email = EmailMessage(mail_subject, message, to=[user.email])
-            email.send()
+            email.send(fail_silently=True)  # Don't block registration if email fails
             
             # Store user ID in session for OTP verification
             request.session['pending_user_id'] = user.id
