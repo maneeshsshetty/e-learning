@@ -18,94 +18,73 @@ def register(request):
         form = CustomUserCreationForm(request.POST) 
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False  # Deactivate until OTP is verified
-            
-            # Generate 6-digit OTP
-            import random
-            from django.utils import timezone
-            otp = str(random.randint(100000, 999999))
-            user.otp = otp
-            user.otp_created_at = timezone.now()
+            user.is_active = True  # Activate immediately (no email verification)
             user.save()
-
-            # Send OTP via email
-            mail_subject = 'Verify your account - OTP Code'
-            message = f"""
-Hello {user.username},
-
-Thank you for registering! Please use the following OTP code to verify your account:
-
-OTP Code: {otp}
-
-This code will expire in 10 minutes.
-
-If you didn't request this, please ignore this email.
-
-Best regards,
-Learning Platform Team
-"""
-            email = EmailMessage(mail_subject, message, to=[user.email])
-            email.send(fail_silently=True)  # Don't block registration if email fails
             
-            # Store user ID in session for OTP verification
-            request.session['pending_user_id'] = user.id
-            return redirect('verify_otp')
+            # Log the user in immediately
+            login(request, user)
+            messages.success(request, 'Registration successful! Welcome to the platform.')
+            return redirect('dashboard')
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
-def verify_otp(request):
-    if request.method == 'POST':
-        otp_entered = request.POST.get('otp', '').strip()
-        user_id = request.session.get('pending_user_id')
-        
-        if not user_id:
-            messages.error(request, 'Session expired. Please register again.')
-            return redirect('register')
-        
-        User = get_user_model()
-        try:
-            user = User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            messages.error(request, 'Invalid session. Please register again.')
-            return redirect('register')
-        
-        # Check if OTP matches
-        if user.otp != otp_entered:
-            messages.error(request, 'Invalid OTP code. Please try again.')
-            return render(request, 'registration/verify_otp.html')
-        
-        # Check if OTP has expired (10 minutes)
-        from django.utils import timezone
-        from datetime import timedelta
-        if user.otp_created_at:
-            # Make sure both datetimes are timezone-aware for comparison
-            otp_created = user.otp_created_at
-            if timezone.is_naive(otp_created):
-                otp_created = timezone.make_aware(otp_created)
-            
-            expiry_time = otp_created + timedelta(minutes=10)
-            if timezone.now() > expiry_time:
-                messages.error(request, 'OTP has expired. Please register again.')
-                user.delete()  # Clean up expired registration
-                return redirect('register')
-        
-        # OTP is valid - activate user
-        user.is_active = True
-        user.otp = None  # Clear OTP
-        user.otp_created_at = None
-        user.save()
-        
-        # Clear session
-        if 'pending_user_id' in request.session:
-            del request.session['pending_user_id']
-        
-        # Log the user in
-        login(request, user)
-        messages.success(request, 'Your account has been verified successfully!')
-        return redirect('dashboard')
-    
-    return render(request, 'registration/verify_otp.html')
+
+# DISABLED: OTP verification (no longer using email verification)
+# def verify_otp(request):
+#     if request.method == 'POST':
+#         otp_entered = request.POST.get('otp', '').strip()
+#         user_id = request.session.get('pending_user_id')
+#         
+#         if not user_id:
+#             messages.error(request, 'Session expired. Please register again.')
+#             return redirect('register')
+#         
+#         User = get_user_model()
+#         try:
+#             user = User.objects.get(pk=user_id)
+#         except User.DoesNotExist:
+#             messages.error(request, 'Invalid session. Please register again.')
+#             return redirect('register')
+#         
+#         # Check if OTP matches
+#         if user.otp != otp_entered:
+#             messages.error(request, 'Invalid OTP code. Please try again.')
+#             return render(request, 'registration/verify_otp.html')
+#         
+#         # Check if OTP has expired (10 minutes)
+#         from django.utils import timezone
+#         from datetime import timedelta
+#         if user.otp_created_at:
+#             # Make sure both datetimes are timezone-aware for comparison
+#             otp_created = user.otp_created_at
+#             if timezone.is_naive(otp_created):
+#                 otp_created = timezone.make_aware(otp_created)
+#             
+#             expiry_time = otp_created + timedelta(minutes=10)
+#             if timezone.now() > expiry_time:
+#                 messages.error(request, 'OTP has expired. Please register again.')
+#                 user.delete()  # Clean up expired registration
+#                 return redirect('register')
+#         
+#         # OTP is valid - activate user
+#         user.is_active = True
+#         user.otp = None  # Clear OTP
+#         user.otp_created_at = None
+#         user.save()
+#         
+#         # Clear session
+#         if 'pending_user_id' in request.session:
+#             del request.session['pending_user_id']
+#         
+#         # Log the user in
+#         login(request, user)
+#         messages.success(request, 'Your account has been verified successfully!')
+#         return redirect('dashboard')
+#     
+#     return render(request, 'registration/verify_otp.html')
+
+
 
 
 @login_required
