@@ -163,26 +163,285 @@ def student_dashboard(request):
     return render(request, 'dashboard/student_dashboard.html')
 
 @login_required
+def available_courses(request):
+    return render(request, 'dashboard/available_courses.html')
+
+@login_required
 def student_course_detail(request, course_id):
     if request.user.role != 'student':
         return redirect('dashboard')
     course = get_object_or_404(Course, id=course_id)
     offerings = CourseOffering.objects.filter(course=course)
+    
+    # Check if user has already paid for this course
+    has_paid = Payment.objects.filter(
+        student=request.user,
+        course=course,
+        status='success'
+    ).exists()
+    
     if request.method == 'POST':
         offering_id = request.POST.get('offering_id')
         offering = get_object_or_404(CourseOffering, id=offering_id)
-        teacher = offering.teacher
+        
+        # Check if already enrolled
         if Enrollment.objects.filter(student=request.user, course_offering=offering).exists():
             messages.warning(request, 'You are already enrolled in this course offering.')
         else:
-            Enrollment.objects.create(student=request.user, course_offering=offering)
-            messages.success(request, f'Successfully enrolled in {course.title}!')
-            return redirect('student_dashboard')
+            # Check if course is free OR user has already paid
+            if course.is_free or course.price == 0 or has_paid:
+                # Free course or already paid - direct enrollment
+                payment = None
+                if has_paid:
+                    # Link to existing payment
+                    payment = Payment.objects.filter(
+                        student=request.user,
+                        course=course,
+                        status='success'
+                    ).first()
+                    # Update payment to link to this offering
+                    if payment and not payment.course_offering:
+                        payment.course_offering = offering
+                        payment.save()
+                
+                Enrollment.objects.create(
+                    student=request.user,
+                    course_offering=offering,
+                    payment=payment
+                )
+                messages.success(request, f'Successfully enrolled in {course.title} with {offering.teacher.username}!')
+                return redirect('student_dashboard')
+            else:
+                # Paid course and hasn't paid yet - redirect to payment
+                return redirect('course_payment_page', course_id=course.id)
             
-    return render(request, 'dashboard/student_course_detail.html', {'course': course, 'offerings': offerings})
+    return render(request, 'dashboard/student_course_detail.html', {
+        'course': course,
+        'offerings': offerings,
+        'has_paid': has_paid
+    })
 
-from rest_framework import viewsets, permissions
-from .serializers import CourseSerializer, UserSerializer, CourseOfferingSerializer, EnrollmentSerializer
+@login_required
+def course_payment_page(request, course_id):
+    """Payment page for course-level payments (not tied to specific teacher)"""
+    if request.user.role != 'student':
+        return redirect('dashboard')
+    
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if already paid for this course
+    existing_payment = Payment.objects.filter(
+        student=request.user,
+        course=course,
+        status='success'
+    ).first()
+    
+    if existing_payment:
+        messages.info(request, 'You have already paid for this course. Please select your teacher.')
+        return redirect('student_course_detail', course_id=course.id)
+    
+    if request.method == 'POST':
+        # PayPal Payment Only
+        from .paypal_service import create_payment
+        from django.urls import reverse
+        
+        # Build absolute URLs for PayPal redirect
+        return_url = request.build_absolute_uri(reverse('paypal_execute'))
+        cancel_url = request.build_absolute_uri(reverse('paypal_cancel'))
+        
+        # Create PayPal payment
+        result = create_payment(
+            amount=course.price,
+            currency='USD',  # Change to 'INR' if needed
+            return_url=return_url,
+            cancel_url=cancel_url,
+            description=f"{course.title} - Course Access"
+        )
+        
+        if result['success']:
+            # Store payment info in session
+            request.session['pending_payment'] = {
+                'course_id': course.id,  # Changed from offering_id
+                'paypal_payment_id': result['payment_id'],
+                'amount': str(course.price)
+            }
+            # Redirect to PayPal for approval
+            return redirect(result['approval_url'])
+        else:
+            messages.error(request, f"PayPal payment creation failed: {result['error']}")
+            return redirect('course_payment_page', course_id=course.id)
+    
+    return render(request, 'payment/payment.html', {
+        'course': course,
+        'amount': course.price
+    })
+
+@login_required
+def payment_page(request, offering_id):
+    if request.user.role != 'student':
+        return redirect('dashboard')
+    
+    offering = get_object_or_404(CourseOffering, id=offering_id)
+    course = offering.course
+    
+    # Check if already enrolled
+    if Enrollment.objects.filter(student=request.user, course_offering=offering).exists():
+        messages.info(request, 'You are already enrolled in this course.')
+        return redirect('student_dashboard')
+    
+    # Check if already paid
+    existing_payment = Payment.objects.filter(
+        student=request.user, 
+        course_offering=offering,
+        status='success'
+    ).first()
+    
+    if existing_payment:
+        messages.info(request, 'Payment already completed for this course.')
+        return redirect('student_dashboard')
+    
+    if request.method == 'POST':
+        # PayPal Payment Only
+        from .paypal_service import create_payment
+        from django.urls import reverse
+        
+        # Build absolute URLs for PayPal redirect
+        return_url = request.build_absolute_uri(reverse('paypal_execute'))
+        cancel_url = request.build_absolute_uri(reverse('paypal_cancel'))
+        
+        # Create PayPal payment
+        result = create_payment(
+            amount=course.price,
+            currency='USD',  # Change to 'INR' if needed
+            return_url=return_url,
+            cancel_url=cancel_url,
+            description=f"{course.title} - {offering.semester} {offering.year}"
+        )
+        
+        if result['success']:
+            # Store payment info in session
+            request.session['pending_payment'] = {
+                'offering_id': offering.id,
+                'paypal_payment_id': result['payment_id'],
+                'amount': str(course.price)
+            }
+            # Redirect to PayPal for approval
+            return redirect(result['approval_url'])
+        else:
+            messages.error(request, f"PayPal payment creation failed: {result['error']}")
+            return redirect('payment_page', offering_id=offering.id)
+    
+    return render(request, 'payment/payment.html', {
+        'offering': offering,
+        'course': course,
+        'amount': course.price
+    })
+
+
+
+@login_required
+def payment_success(request, transaction_id):
+    payment = get_object_or_404(Payment, transaction_id=transaction_id, student=request.user)
+    return render(request, 'payment/payment_success.html', {'payment': payment})
+
+
+@login_required
+def paypal_execute(request):
+    """Handle PayPal return after user approves payment"""
+    if request.user.role != 'student':
+        return redirect('dashboard')
+    
+    # Get PayPal parameters
+    payment_id = request.GET.get('paymentId')
+    payer_id = request.GET.get('PayerID')
+    
+    # Get pending payment from session
+    pending_payment = request.session.get('pending_payment')
+    
+    if not pending_payment or not payment_id or not payer_id:
+        messages.error(request, 'Invalid payment session.')
+        return redirect('student_dashboard')
+    
+    # Execute PayPal payment
+    from .paypal_service import execute_payment
+    result = execute_payment(payment_id, payer_id)
+    
+    if result['success']:
+        import uuid
+        transaction_id = f"PAYPAL{uuid.uuid4().hex[:10].upper()}"
+        
+        # Check if this is a course-level payment (new flow) or offering-level (old flow)
+        if 'course_id' in pending_payment:
+            # NEW FLOW: Course-level payment
+            course = get_object_or_404(Course, id=pending_payment['course_id'])
+            
+            payment = Payment.objects.create(
+                student=request.user,
+                course=course,
+                course_offering=None,  # No offering yet - student will select teacher
+                amount=pending_payment['amount'],
+                payment_method='paypal',
+                status='success',
+                transaction_id=transaction_id,
+                payment_source='paypal',
+                paypal_payment_id=payment_id,
+                paypal_payer_id=payer_id
+            )
+            
+            # Clear session
+            del request.session['pending_payment']
+            
+            messages.success(request, 'Payment completed successfully! Now select your teacher.')
+            return redirect('student_course_detail', course_id=course.id)
+            
+        else:
+            # OLD FLOW: Offering-level payment (backward compatibility)
+            offering = get_object_or_404(CourseOffering, id=pending_payment['offering_id'])
+            
+            payment = Payment.objects.create(
+                student=request.user,
+                course=offering.course,
+                course_offering=offering,
+                amount=pending_payment['amount'],
+                payment_method='paypal',
+                status='success',
+                transaction_id=transaction_id,
+                payment_source='paypal',
+                paypal_payment_id=payment_id,
+                paypal_payer_id=payer_id
+            )
+            
+            # Create enrollment
+            Enrollment.objects.create(
+                student=request.user,
+                course_offering=offering,
+                payment=payment
+            )
+            
+            # Clear session
+            del request.session['pending_payment']
+            
+            messages.success(request, 'Payment completed successfully via PayPal!')
+            return redirect('payment_success', transaction_id=transaction_id)
+    else:
+        messages.error(request, f'Payment execution failed: {result["error"]}')
+        return redirect('student_dashboard')
+
+
+
+@login_required
+def paypal_cancel(request):
+    """Handle PayPal cancellation"""
+    if 'pending_payment' in request.session:
+        del request.session['pending_payment']
+    
+    messages.warning(request, 'Payment was cancelled.')
+    return redirect('student_dashboard')
+
+
+from rest_framework import viewsets, permissions, filters
+from .models import Payment
+from .serializers import CourseSerializer, UserSerializer, CourseOfferingSerializer, EnrollmentSerializer, PaymentSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all() 
@@ -211,6 +470,8 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'description']
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
     queryset = Enrollment.objects.all()
@@ -224,3 +485,26 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
         elif user.role == 'teacher':
              return Enrollment.objects.filter(course_offering__teacher=user)
         return Enrollment.objects.all()
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'student':
+            return Payment.objects.filter(student=user)
+        return Payment.objects.all()
+    
+    def perform_create(self, serializer):
+        # Save payment
+        payment = serializer.save()
+        
+        # Auto-create enrollment after successful payment
+        if payment.status == 'success':
+            Enrollment.objects.create(
+                student=payment.student,
+                course_offering=payment.course_offering,
+                payment=payment
+            )

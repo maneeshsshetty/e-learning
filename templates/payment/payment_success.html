@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .success-container {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .success-card {
+        max-width: 600px;
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .success-header {
+        background-color: var(--bs-success);
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        animation: scaleIn 0.5s ease-out;
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+        }
+
+        to {
+            transform: scale(1);
+        }
+    }
+
+    .success-icon i {
+        font-size: 3rem;
+    }
+
+    .detail-row {
+        padding: 1rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .action-btn {
+        background-color: var(--action-color);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+        color: white;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #667eea;
+        animation: confetti-fall 3s linear infinite;
+    }
+
+    @keyframes confetti-fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+</style>
+
+<div class="success-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card success-card">
+                    <!-- Success Header -->
+                    <div class="success-header">
+                        <div class="success-icon">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Payment Successful!</h2>
+                        <p class="mb-0 opacity-90">Your enrollment is confirmed</p>
+                    </div>
+
+                    <!-- Payment Details -->
+                    <div class="card-body p-4">
+                        <div class="alert alert-success border-0 mb-4" style="background: #f0fdf4;">
+                            <div class="text-center">
+                                <i class="bi bi-check-circle text-success fs-4"></i>
+                                <p class="mb-0 mt-2 fw-semibold text-success">
+                                    You've been automatically enrolled in the course!
+                                </p>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-4 fw-bold">Transaction Details</h5>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Transaction ID</div>
+                            <div class="detail-value">
+                                <i class="bi bi-hash text-primary"></i> {{ payment.transaction_id }}
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Course</div>
+                            <div class="detail-value">
+                                <i class="bi bi-book text-primary"></i> {{ payment.course_offering.course.title }}
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Amount Paid</div>
+                            <div class="detail-value text-success">
+                                <i class="bi bi-currency-dollar"></i> {{ payment.amount }}
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-label">Payment Method</div>
+                            <div class="detail-value">
+                                <i class="bi bi-credit-card text-primary"></i> {{ payment.get_payment_method_display }}
+                            </div>
+                        </div>
+
+                        {% if payment.payment_source == 'paypal' %}
+                        <div class="detail-row">
+                            <div class="detail-label">PayPal Payment ID</div>
+                            <div class="detail-value" style="font-size: 0.9rem;">
+                                <i class="bi bi-paypal text-primary"></i> {{ payment.paypal_payment_id }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="detail-row">
+                            <div class="detail-label">Date & Time</div>
+                            <div class="detail-value">
+                                <i class="bi bi-calendar-check text-primary"></i> {{ payment.created_at|date:"M d, Y -
+                                h:i A" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card-footer bg-light border-0 p-4">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-primary action-btn">
+                                <i class="bi bi-house-door-fill"></i> Go to My Courses
+                            </a>
+                            <button onclick="window.print()" class="btn btn-outline-secondary">
+                                <i class="bi bi-printer"></i> Print Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add subtle animation on load
+    document.addEventListener('DOMContentLoaded', function () {
+        const card = document.querySelector('.success-card');
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease-out';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 100);
+    });
+</script>
+{% endblock %}

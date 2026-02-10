@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Course, CourseOffering #, Enrollment
+from .models import Course, CourseOffering, Enrollment
 
 User = get_user_model()
 class CourseOfferingSerializer(serializers.Serializer):
@@ -66,50 +66,186 @@ class CourseSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200)
     description = serializers.CharField()
     created_at = serializers.DateTimeField(read_only=True)
-    teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    teacher_name = serializers.ReadOnlyField(source='teacher.username')
-    price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_free = serializers.BooleanField(read_only=True)
+    teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
+    teacher_name = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
+    photo_file = serializers.ImageField(required=False, allow_null=True, write_only=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_free = serializers.BooleanField(default=False)
     formatted_price = serializers.SerializerMethodField()
 
     teacher_count = serializers.SerializerMethodField()
+    user_has_paid = serializers.SerializerMethodField()
+    
+    def get_photo(self, obj):
+        """Return full URL for photo"""
+        if obj.photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.photo.url)
+            return obj.photo.url
+        return None
     
     def get_teacher_count(self, obj):
         # Return 1 if course has a teacher, 0 otherwise
-        return 1 if obj.teacher else 0
+        # Use hasattr to safely check if teacher relationship exists
+        try:
+            return 1 if obj.teacher else 0
+        except:
+            return 0
+
+    def get_teacher_name(self, obj):
+        if obj.teacher:
+            return obj.teacher.username
+        return "Unknown Teacher"
     
     def get_formatted_price(self, obj):
         """Return formatted price with rupee symbol"""
         if obj.is_free:
             return "FREE"
         return f"₹{obj.price:,.2f}"
+    
+    def get_user_has_paid(self, obj):
+        """Check if current user has paid for this course"""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from .models import Payment
+            return Payment.objects.filter(
+                student=request.user,
+                course=obj,
+                status='success'
+            ).exists()
+        return False
 #create
     def create(self, validated_data):
-        return Course.objects.create(**validated_data)
+        photo_file = validated_data.pop('photo_file', None)
+        course = Course.objects.create(**validated_data)
+        if photo_file:
+            course.photo = photo_file
+            course.save()
+        return course
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
         instance.teacher = validated_data.get('teacher', instance.teacher)
+        instance.price = validated_data.get('price', instance.price)
+        instance.is_free = validated_data.get('is_free', instance.is_free)
+        photo_file = validated_data.get('photo_file')
+        if photo_file:
+            instance.photo = photo_file
         instance.save()
         return instance
+
+
+class PaymentSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    student = serializers.PrimaryKeyRelatedField(read_only=True)
+    course_offering = serializers.PrimaryKeyRelatedField(queryset=CourseOffering.objects.all())
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    payment_method = serializers.ChoiceField(choices=['credit_card', 'debit_card', 'upi', 'net_banking'])
+    status = serializers.CharField(read_only=True)
+    transaction_id = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    
+    # Display fields
+    course_title = serializers.ReadOnlyField(source='course_offering.course.title')
+    course_price = serializers.ReadOnlyField(source='course_offering.course.price')
+    student_name = serializers.ReadOnlyField(source='student.username')
+    
+    def create(self, validated_data):
+        import uuid
+        from .models import Payment
+        
+        # Generate unique transaction ID
+        transaction_id = f"TXN{uuid.uuid4().hex[:12].upper()}"
+        
+        # Get course price
+        course_offering = validated_data['course_offering']
+        amount = course_offering.course.price
+        
+        # Create payment (auto-success for dummy payment)
+        payment = Payment.objects.create(
+            student=self.context['request'].user,
+            course_offering=course_offering,
+            amount=amount,
+            payment_method=validated_data['payment_method'],
+            status='success',  # Dummy payment always succeeds
+            transaction_id=transaction_id
+        )
+        return payment
 
 
 class EnrollmentSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     student = serializers.PrimaryKeyRelatedField(read_only=True)
     course_offering = serializers.PrimaryKeyRelatedField(queryset=CourseOffering.objects.all())
+    payment = serializers.PrimaryKeyRelatedField(read_only=True)
     enrolled_at = serializers.DateTimeField(read_only=True)
     grade = serializers.CharField(max_length=2, required=False, allow_blank=True, allow_null=True)
 
     # Fields for display
-    course_title = serializers.ReadOnlyField(source='course_offering.course.title')
-    teacher_name = serializers.ReadOnlyField(source='course_offering.teacher.username')
-    semester = serializers.ReadOnlyField(source='course_offering.semester')
-    year = serializers.ReadOnlyField(source='course_offering.year')
-    meet_link = serializers.ReadOnlyField(source='course_offering.meet_link')
-    class_description = serializers.ReadOnlyField(source='course_offering.class_description')
+    course_title = serializers.SerializerMethodField()
+    course_id = serializers.SerializerMethodField()
+    teacher_name = serializers.SerializerMethodField()
+    semester = serializers.SerializerMethodField()
+    year = serializers.SerializerMethodField()
+    meet_link = serializers.SerializerMethodField()
+    class_description = serializers.SerializerMethodField()
     student_name = serializers.ReadOnlyField(source='student.username')
+    course_photo = serializers.SerializerMethodField()
+
+    def get_offering_safe(self, obj):
+        try:
+            return obj.course_offering
+        except:
+            return None
+
+    def get_course_title(self, obj):
+        offering = self.get_offering_safe(obj)
+        if offering and offering.course:
+            return offering.course.title
+        return "Unknown Course"
+
+    def get_course_id(self, obj):
+        offering = self.get_offering_safe(obj)
+        if offering and offering.course:
+            return offering.course.id
+        return None
+
+    def get_teacher_name(self, obj):
+        offering = self.get_offering_safe(obj)
+        if offering and offering.teacher:
+            return offering.teacher.username
+        return "Unknown Teacher"
+
+    def get_semester(self, obj):
+        offering = self.get_offering_safe(obj)
+        return offering.semester if offering else ""
+
+    def get_year(self, obj):
+        offering = self.get_offering_safe(obj)
+        return offering.year if offering else ""
+
+    def get_meet_link(self, obj):
+        offering = self.get_offering_safe(obj)
+        return offering.meet_link if offering else None
+
+    def get_class_description(self, obj):
+        offering = self.get_offering_safe(obj)
+        return offering.class_description if offering else None
+
+    def get_course_photo(self, obj):
+        offering = self.get_offering_safe(obj)
+        try:
+            if offering and offering.course and offering.course.photo:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(offering.course.photo.url)
+                return offering.course.photo.url
+        except:
+            return None
+        return None
 
     def create(self, validated_data):
         return Enrollment.objects.create(**validated_data)

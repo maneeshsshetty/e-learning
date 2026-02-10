@@ -1,169 +1,267 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-fluid px-4">
-    <!-- Back Button -->
-    <div class="row mb-3">
+<style>
+    :root {
+        --primary-color: #0f172a;
+        /* Slate 900 */
+        --action-color: #2563eb;
+        /* Blue 600 */
+        --surface-color: #ffffff;
+        --bg-color: #f8fafc;
+        /* Slate 50 */
+        --text-primary: #1e293b;
+        /* Slate 800 */
+        --text-secondary: #64748b;
+        /* Slate 500 */
+        --card-border: 1px solid #e2e8f0;
+        --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+        /* Override Bootstrap Variables */
+        --bs-primary: #0f172a;
+        --bs-primary-rgb: 15, 23, 42;
+        --bs-success: #059669;
+        /* Emerald 600 */
+        --bs-success-rgb: 5, 150, 105;
+        --bs-info: #0891b2;
+        /* Cyan 600 */
+        --bs-info-rgb: 8, 145, 178;
+        --bs-warning: #d97706;
+        /* Amber 600 */
+        --bs-warning-rgb: 217, 119, 6;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+    }
+
+    .course-header {
+        background: var(--surface-color);
+        border: var(--card-border);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2rem;
+    }
+
+    .course-cover {
+        height: 300px;
+        background-color: var(--primary-color);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .course-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .course-meta {
+        padding: 2rem;
+    }
+
+    .instructor-card {
+        background: var(--surface-color);
+        border: var(--card-border);
+        border-radius: 0.5rem;
+        transition: border-color 0.2s;
+        height: 100%;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+    }
+
+    .instructor-card:hover {
+        border-color: var(--action-color);
+    }
+
+    .avatar-circle {
+        width: 80px;
+        height: 80px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 500;
+        margin: -40px auto 1rem;
+        border: 4px solid white;
+        box-shadow: var(--card-shadow);
+    }
+
+    .price-badge {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        background: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 2rem;
+        font-weight: 700;
+        color: #4f46e5;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="container-fluid px-4 dashboard-container">
+    <!-- Back Navigation -->
+    <div class="row mb-4">
         <div class="col-12">
-            <a href="{% url 'student_dashboard' %}" class="btn btn-link text-muted text-decoration-none">
-                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <a href="{% url 'student_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
             </a>
         </div>
     </div>
 
-    <!-- Course Header Card -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="row g-0">
-                    <!-- Course Image -->
-                    <div class="col-md-4">
-                        {% if course.photo %}
-                        <img src="{{ course.photo.url }}" class="img-fluid rounded-start h-100"
-                            style="object-fit: cover; min-height: 250px;" alt="{{ course.title }}">
+    <!-- Course Header -->
+    <div class="course-header">
+        <div class="row g-0">
+            <div class="col-md-5 position-relative">
+                <div class="course-cover">
+                    {% if course.photo %}
+                    <img src="{{ course.photo.url }}" alt="{{ course.title }}">
+                    {% else %}
+                    <div class="text-center">
+                        <i class="bi bi-journal-richtext fs-1" style="font-size: 4rem !important; opacity: 0.8;"></i>
+                    </div>
+                    {% endif %}
+
+                    <div class="price-badge">
+                        {% if course.is_free %}
+                        Free
                         {% else %}
-                        <div class="bg-gradient bg-dark text-white d-flex align-items-center justify-content-center rounded-start h-100"
-                            style="min-height: 250px;">
-                            <div class="text-center">
-                                <i class="bi bi-book fs-1"></i>
-                                <p class="mt-2 mb-0">{{ course.title }}</p>
-                            </div>
+                        ₹{{ course.price }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="course-meta h-100 d-flex flex-column justify-content-center">
+                    <div class="mb-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2">
+                            Course Detail
+                        </span>
+                        {% if has_paid %}
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mb-2 ms-2">
+                            <i class="bi bi-check-circle me-1"></i>Paid
+                        </span>
+                        {% endif %}
+                    </div>
+                    <h1 class="display-6 fw-bold mb-3">{{ course.title }}</h1>
+                    <p class="text-muted lead mb-4">{{ course.description }}</p>
+
+                    {% if not course.is_free and course.price > 0 and not has_paid %}
+                    <div class="mb-4">
+                        <a href="{% url 'course_payment_page' course.id %}"
+                            class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                            <i class="bi bi-cart-check me-2"></i>Buy Now - ₹{{ course.price }}
+                        </a>
+                        <p class="small text-muted mt-2 mb-0">
+                            <i class="bi bi-shield-check me-1"></i>Secure payment via PayPal
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-4 text-muted small">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span>Expert Instructors</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-award-fill text-warning"></i>
+                            <span>Certificate Included</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-fill text-info"></i>
+                            <span>Lifetime Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructors Section -->
+    <div class="row mb-4">
+        <div class="col-12 text-center mb-4">
+            {% if has_paid %}
+            <h3 class="fw-bold">Choose Your Instructor</h3>
+            <p class="text-muted">You've paid for this course! Select your preferred teacher to begin.</p>
+            {% elif course.is_free or course.price == 0 %}
+            <h3 class="fw-bold">Choose Your Instructor</h3>
+            <p class="text-muted">Select a teacher to enroll in this free course</p>
+            {% else %}
+            <h3 class="fw-bold">Available Instructors</h3>
+            <p class="text-muted">Purchase the course to unlock teacher selection</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        {% for offering in offerings %}
+        <div class="col-md-6 col-lg-4">
+            <div class="instructor-card">
+                <div class="bg-light" style="height: 100px;"></div>
+                <div class="px-4 pb-4 text-center">
+                    <div class="avatar-circle">
+                        {{ offering.teacher.username|first|upper }}
+                    </div>
+
+                    <h5 class="fw-bold mb-1">{{ offering.teacher.username }}</h5>
+                    <p class="text-muted small mb-3">Course Instructor</p>
+
+                    <div class="card bg-light border-0 p-3 mb-3 rounded-3 text-start">
+                        {% if offering.semester or offering.year %}
+                        <div class="d-flex align-items-center gap-2 mb-2 small text-muted">
+                            <i class="bi bi-calendar-event text-primary"></i>
+                            <span>{{ offering.semester }} {{ offering.year }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if offering.class_description %}
+                        <div class="d-flex gap-2 small text-muted">
+                            <i class="bi bi-info-circle text-primary mt-1"></i>
+                            <span>{{ offering.class_description|truncatewords:10 }}</span>
                         </div>
                         {% endif %}
                     </div>
 
-                    <!-- Course Info -->
-                    <div class="col-md-8">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h2 class="card-title display-6 fw-bold mb-2">{{ course.title }}</h2>
-                                    <p class="text-muted mb-0">
-                                        <i class="bi bi-person-circle"></i> Taught by professional instructors
-                                    </p>
-                                </div>
-                                <div class="text-end">
-                                    {% if course.is_free %}
-                                    <span class="badge bg-success fs-4 px-4 py-2">FREE</span>
-                                    {% else %}
-                                    <div>
-                                        <div class="text-muted small">Course Price</div>
-                                        <span class="badge bg-primary fs-4 px-4 py-2">₹{{ course.price }}</span>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="offering_id" value="{{ offering.id }}">
 
-                            <hr>
-
-                            <div class="mt-3">
-                                <h6 class="text-muted text-uppercase small mb-2">About This Course</h6>
-                                <p class="lead mb-0">{{ course.description }}</p>
-                            </div>
-                        </div>
-                    </div>
+                        {% if course.is_free or course.price == 0 %}
+                        <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">
+                            Enroll for Free <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                        {% elif has_paid %}
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm">
+                            Select This Teacher <i class="bi bi-check-circle ms-1"></i>
+                        </button>
+                        {% else %}
+                        <a href="{% url 'course_payment_page' course.id %}"
+                            class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm">
+                            Buy Course First <i class="bi bi-lock ms-1"></i>
+                        </a>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Teacher Selection Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="mb-4">
-                <h3 class="fw-bold mb-1">
-                    <i class="bi bi-people-fill text-primary"></i> Choose Your Instructor
-                </h3>
-                <p class="text-muted">Select from our experienced teachers to begin your learning journey</p>
-            </div>
-
-            <div class="row g-4">
-                {% for offering in offerings %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 shadow-sm border-0 hover-lift" style="transition: transform 0.2s;">
-                        <div class="card-body p-4">
-                            <!-- Teacher Avatar -->
-                            <div class="text-center mb-3">
-                                <div class="position-relative d-inline-block">
-                                    <div class="bg-gradient bg-dark text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow"
-                                        style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
-                                        {{ offering.teacher.username|first|upper }}
-                                    </div>
-                                    <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Teacher Info -->
-                            <div class="text-center mb-3">
-                                <h5 class="card-title fw-bold mb-1">{{ offering.teacher.username|title }}</h5>
-                                <p class="text-muted small mb-2">
-                                    <i class="bi bi-mortarboard-fill"></i> Course Instructor
-                                </p>
-                            </div>
-
-                            <!-- Course Details -->
-                            {% if offering.semester or offering.year %}
-                            <div class="mb-3">
-                                <div class="d-flex align-items-center justify-content-center gap-2 text-muted small">
-                                    <i class="bi bi-calendar3"></i>
-                                    <span>{{ offering.semester }} {{ offering.year }}</span>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if offering.class_description %}
-                            <div class="mb-3">
-                                <div class="alert alert-light border-0 bg-light small mb-0">
-                                    <i class="bi bi-info-circle text-primary"></i>
-                                    {{ offering.class_description|truncatewords:15 }}
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if offering.meet_link %}
-                            <div class="mb-3 text-center">
-                                <small class="text-muted">
-                                    <i class="bi bi-camera-video-fill text-success"></i> Online classes available
-                                </small>
-                            </div>
-                            {% endif %}
-
-                            <!-- Enroll Button -->
-                            <form method="post" class="mt-auto">
-                                {% csrf_token %}
-                                <input type="hidden" name="offering_id" value="{{ offering.id }}">
-                                <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">
-                                    <i class="bi bi-check-circle"></i> Enroll Now
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-warning border-0 shadow-sm text-center py-5">
-                        <i class="bi bi-exclamation-triangle fs-1 text-warning mb-3"></i>
-                        <h5 class="mb-2">No Instructors Available</h5>
-                        <p class="text-muted mb-0">This course doesn't have any active instructors at the moment. Please
-                            check back later.</p>
-                    </div>
-                </div>
-                {% endfor %}
+        {% empty %}
+        <div class="col-md-6">
+            <div class="alert alert-warning border-0 shadow-sm text-center py-5 rounded-4">
+                <i class="bi bi-exclamation-circle fs-1 text-warning mb-3 d-block"></i>
+                <h5>No Instructors Available</h5>
+                <p class="text-muted mb-0">Check back later for available sessions.</p>
             </div>
         </div>
+        {% endfor %}
     </div>
 </div>
-
-<style>
-    .hover-lift:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
-
-    .bg-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
 {% endblock %}

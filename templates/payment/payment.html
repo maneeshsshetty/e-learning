@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --brand-primary: #2563eb;
+        --brand-dark: #0f172a;
+        --text-main: #334155;
+        --text-muted: #64748b;
+        --bg-subtle: #f8fafc;
+        --border-color: #e2e8f0;
+        --white: #ffffff;
+        --success: #10b981;
+    }
+
+    /* Force the page to be exactly the size of the screen and centered */
+    body,
+    html {
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f1f5f9;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    /* THE CENTER FIX: Absolute centering within the viewport */
+    .checkout-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1000;
+        /* Ensures it sits above any base layout shifts */
+    }
+
+    .checkout-container {
+        max-width: 1050px;
+        width: 100%;
+        height: 80vh;
+        /* Controlled height */
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        background: var(--white);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border-color);
+        animation: fadeInScale 0.4s ease-out;
+    }
+
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.98);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Left: Order Summary Panel */
+    .summary-panel {
+        background-color: var(--bg-subtle);
+        padding: 48px;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .back-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        transition: color 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .back-link:hover {
+        color: var(--brand-primary);
+    }
+
+    .course-card-static {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .course-thumb {
+        width: 70px;
+        height: 70px;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+
+    .price-details {
+        margin-top: auto;
+        /* Pushes to bottom of panel */
+        padding-bottom: 20px;
+    }
+
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+
+    .price-row.total {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        color: var(--brand-dark);
+        font-weight: 700;
+        font-size: 1.5rem;
+    }
+
+    /* Right: Payment Panel */
+    .payment-panel {
+        padding: 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .secure-badge {
+        display: inline-flex;
+        align-items: center;
+        color: var(--success);
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .payment-method-box {
+        border: 2px solid var(--brand-primary);
+        border-radius: 20px;
+        padding: 32px;
+        background: #ffffff;
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1);
+    }
+
+    .paypal-btn {
+        background: #0070ba;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        width: 100%;
+        padding: 18px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .paypal-btn:hover {
+        background: #005ea6;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 112, 186, 0.3);
+    }
+
+    .trust-footer {
+        margin-top: 40px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .trust-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .trust-item i {
+        color: var(--success);
+    }
+
+    /* Handling Responsive Shifts */
+    @media (max-width: 900px) {
+
+        body,
+        html {
+            overflow-y: auto;
+            height: auto;
+        }
+
+        .checkout-wrapper {
+            position: relative;
+            height: auto;
+            padding: 40px 15px;
+        }
+
+        .checkout-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .summary-panel {
+            padding: 32px;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .payment-panel {
+            padding: 32px;
+        }
+    }
+</style>
+
+<div class="checkout-wrapper">
+    <div class="checkout-container">
+
+        <div class="summary-panel">
+            <a href="{% url 'student_course_detail' course.id %}" class="back-link">
+                <i class="bi bi-arrow-left-short fs-4"></i> Back to Course
+            </a>
+
+            <h2 class="mb-4" style="color: var(--brand-dark); font-weight: 800; letter-spacing: -0.5px;">Order Summary
+            </h2>
+
+            <div class="course-card-static mb-4">
+                {% if course.photo %}
+                <img src="{{ course.photo.url }}" class="course-thumb" alt="Thumbnail">
+                {% else %}
+                <div class="course-thumb d-flex align-items-center justify-content-center bg-dark text-white">
+                    <i class="bi bi-journal-bookmark"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <div class="text-primary fw-bold small mb-1">E-LEARNING ENROLLMENT</div>
+                    <h6 class="mb-0 fw-bold" style="color: var(--brand-dark);">{{ course.title }}</h6>
+                </div>
+            </div>
+
+            <div class="price-details">
+                <div class="price-row">
+                    <span>Course Curriculum Access</span>
+                    <span class="fw-medium text-dark">Included</span>
+                </div>
+                <div class="price-row">
+                    <span>Digital Certification</span>
+                    <span class="fw-medium text-dark">Included</span>
+                </div>
+                <div class="price-row">
+                    <span>Subtotal</span>
+                    <span class="fw-medium text-dark">₹{{ amount }}</span>
+                </div>
+                <div class="price-row total">
+                    <span>Total Due</span>
+                    <span>₹{{ amount }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-panel">
+            <div class="secure-badge">
+                <i class="bi bi-shield-lock-fill me-2"></i> 256-Bit SSL Secured Checkout
+            </div>
+
+            <h3 class="fw-bold mb-4" style="color: var(--brand-dark);">Select Payment</h3>
+
+            <div class="payment-method-box">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="small fw-bold text-muted text-uppercase">Direct Payment</span>
+                    <div class="d-flex gap-2">
+                        <i class="bi bi-credit-card text-muted"></i>
+                        <i class="bi bi-paypal text-primary"></i>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="payment_type" value="paypal" class="paypal-btn">
+                        <i class="bi bi-paypal"></i> Pay via PayPal
+                    </button>
+                </form>
+
+                <p class="text-center small text-muted mt-3 mb-0">
+                    You will be redirected to PayPal to complete your purchase safely.
+                </p>
+            </div>
+
+            <div class="trust-footer">
+                <div class="trust-item"><i class="bi bi-check-circle-fill"></i> Lifetime Access</div>
+                <div class="trust-item"><i class="bi bi-check-circle-fill"></i> Secure Data</div>
+                <div class="trust-item"><i class="bi bi-check-circle-fill"></i> Money Back Guarantee</div>
+                <div class="trust-item"><i class="bi bi-check-circle-fill"></i> Instant Activation</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Button state management
+    document.querySelector('form').addEventListener('submit', function () {
+        const btn = document.querySelector('.paypal-btn');
+        btn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div><span class="ms-2">Connecting...</span>';
+        btn.style.opacity = '0.8';
+        btn.style.pointerEvents = 'none';
+    });
+</script>
+{% endblock %}

@@ -11,7 +11,7 @@ from django.conf.urls.static import static
 # ==============================================================================
 
 from rest_framework.routers import DefaultRouter
-from courses.views import UserViewSet, CourseViewSet, EnrollmentViewSet, CourseOfferingViewSet
+from courses.views import UserViewSet, CourseViewSet, EnrollmentViewSet, CourseOfferingViewSet, PaymentViewSet
 
 # ROUTER: This automatically creates API URLs for us
 # e.g., 'api/users/', 'api/users/1/', 'api/courses/' ...
@@ -20,6 +20,7 @@ router.register(r'users', UserViewSet)
 router.register(r'courses', CourseViewSet)
 router.register(r'enrollments', EnrollmentViewSet)
 router.register(r'offerings', CourseOfferingViewSet) # New Endpoint for Teachers
+router.register(r'payments', PaymentViewSet) # Payment endpoint
 
 urlpatterns = [
     # 1. Django Admin (Superuser control panel)
