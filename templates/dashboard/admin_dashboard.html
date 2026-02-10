@@ -36,6 +36,7 @@
                                 <th>Title</th>
                                 <th>Description</th>
                                 <th>Teachers</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="courses-list-body">
@@ -71,6 +72,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="teachers-list-body">
@@ -101,6 +103,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="students-list-body">
@@ -145,11 +148,21 @@
                 const teacherCount = course.teacher_count || 0;
 
                 const html = `
-                <tr>
+                <tr id="course-${course.id}">
                     <td>${photoHtml}</td>
                     <td class="fw-bold">${course.title}</td>
                     <td class="text-muted small">${course.description ? course.description.substring(0, 50) + '...' : ''}</td>
                     <td><span class="badge bg-secondary rounded-pill">${teacherCount}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')"
+                            title="Edit Course">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')"
+                            title="Delete Course">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', html);
@@ -177,9 +190,15 @@
 
             teachers.forEach(teacher => {
                 const html = `
-                <tr>
+                <tr id="teacher-${teacher.id}">
                     <td class="fw-bold">${teacher.username}</td>
                     <td class="small text-muted">${teacher.email}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTeacher(${teacher.id}, '${teacher.username.replace(/'/g, "\\'")}')"
+                            title="Delete Teacher">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', html);
@@ -206,9 +225,15 @@
 
             students.forEach(student => {
                 const html = `
-                <tr>
+                <tr id="student-${student.id}">
                     <td class="fw-bold">${student.username}</td>
                     <td class="small text-muted">${student.email}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent(${student.id}, '${student.username.replace(/'/g, "\\'")}')" 
+                            title="Delete Student">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', html);
@@ -216,6 +241,161 @@
         } catch (error) {
             console.error('Error fetching students:', error);
         }
+    }
+
+    // Delete Course Function
+    async function deleteCourse(courseId, courseTitle) {
+        if (!confirm(`Are you sure you want to delete "${courseTitle}"?\n\nThis action cannot be undone and will remove all associated data.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/courses/${courseId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok || response.status === 204) {
+                // Remove row from table
+                const row = document.getElementById(`course-${courseId}`);
+                if (row) {
+                    row.remove();
+                }
+                alert(`Course "${courseTitle}" deleted successfully!`);
+            } else {
+                alert('Failed to delete course. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting course:', error);
+            alert('An error occurred while deleting the course.');
+        }
+    }
+
+    // Edit Course Function
+    function editCourse(courseId, courseTitle) {
+        const newTitle = prompt(`Edit course title:`, courseTitle);
+
+        if (newTitle === null || newTitle.trim() === '') {
+            return; // User cancelled or entered empty string
+        }
+
+        if (newTitle === courseTitle) {
+            alert('No changes made.');
+            return;
+        }
+
+        updateCourse(courseId, newTitle.trim());
+    }
+
+    async function updateCourse(courseId, newTitle) {
+        try {
+            const response = await fetch(`/api/courses/${courseId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ title: newTitle })
+            });
+
+            if (response.ok) {
+                alert('Course updated successfully!');
+                fetchCourses(); // Refresh the list
+            } else {
+                alert('Failed to update course. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error updating course:', error);
+            alert('An error occurred while updating the course.');
+        }
+    }
+
+    // Delete Teacher Function
+    async function deleteTeacher(teacherId, teacherName) {
+        if (!confirm(`Are you sure you want to delete teacher "${teacherName}"?\n\nThis will remove the teacher account and all associated data.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/users/${teacherId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok || response.status === 204) {
+                // Remove row from table
+                const row = document.getElementById(`teacher-${teacherId}`);
+                if (row) {
+                    row.remove();
+                }
+                // Update count
+                const countBadge = document.getElementById('teachers-count');
+                const currentCount = parseInt(countBadge.innerText);
+                countBadge.innerText = `${currentCount - 1} Total`;
+
+                alert(`Teacher "${teacherName}" deleted successfully!`);
+            } else {
+                alert('Failed to delete teacher. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting teacher:', error);
+            alert('An error occurred while deleting the teacher.');
+        }
+    }
+
+    // Delete Student Function
+    async function deleteStudent(studentId, studentName) {
+        if (!confirm(`Are you sure you want to delete student "${studentName}"?\n\nThis will remove the student account and all associated data.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/users/${studentId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok || response.status === 204) {
+                // Remove row from table
+                const row = document.getElementById(`student-${studentId}`);
+                if (row) {
+                    row.remove();
+                }
+                // Update count
+                const countBadge = document.getElementById('students-count');
+                const currentCount = parseInt(countBadge.innerText);
+                countBadge.innerText = `${currentCount - 1} Total`;
+
+                alert(`Student "${studentName}" deleted successfully!`);
+            } else {
+                alert('Failed to delete student. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            alert('An error occurred while deleting the student.');
+        }
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>
 {% endblock %}
