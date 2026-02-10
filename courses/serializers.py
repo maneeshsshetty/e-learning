@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Course, Enrollment, CourseOffering
+from .models import Course, CourseOffering #, Enrollment
 
 User = get_user_model()
 class CourseOfferingSerializer(serializers.Serializer):
@@ -30,18 +30,18 @@ class UserSerializer(serializers.Serializer):
     role = serializers.CharField(max_length=10)
     teaching_courses = serializers.StringRelatedField(many=True, read_only=True)
     course_offerings = CourseOfferingSerializer(many=True, read_only=True)
-    enrollments = serializers.SerializerMethodField()
-
-    def get_enrollments(self, obj):
-        items = obj.enrollments.select_related('course', 'teacher').all()
-        return [
-            {
-                'id': item.id,
-                'course': {'title': item.course.title},
-                'teacher': {'username': item.teacher.username}
-            } 
-            for item in items
-        ]
+    # enrollments = serializers.SerializerMethodField()
+    # 
+    # def get_enrollments(self, obj):
+    #     items = obj.enrollments.select_related('course', 'teacher').all()
+    #     return [
+    #         {
+    #             'id': item.id,
+    #             'course': {'title': item.course.title},
+    #             'teacher': {'username': item.teacher.username}
+    #         } 
+    #         for item in items
+    #     ]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -65,14 +65,24 @@ class CourseSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     title = serializers.CharField(max_length=200)
     description = serializers.CharField()
-    photo = serializers.ImageField(required=False)
     created_at = serializers.DateTimeField(read_only=True)
-    teachers = serializers.StringRelatedField(many=True, read_only=True)
+    teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    teacher_name = serializers.ReadOnlyField(source='teacher.username')
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_free = serializers.BooleanField(read_only=True)
+    formatted_price = serializers.SerializerMethodField()
 
     teacher_count = serializers.SerializerMethodField()
     
     def get_teacher_count(self, obj):
-        return obj.teachers.count()
+        # Return 1 if course has a teacher, 0 otherwise
+        return 1 if obj.teacher else 0
+    
+    def get_formatted_price(self, obj):
+        """Return formatted price with rupee symbol"""
+        if obj.is_free:
+            return "FREE"
+        return f"₹{obj.price:,.2f}"
 #create
     def create(self, validated_data):
         return Course.objects.create(**validated_data)
@@ -80,7 +90,7 @@ class CourseSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
-        instance.photo = validated_data.get('photo', instance.photo)
+        instance.teacher = validated_data.get('teacher', instance.teacher)
         instance.save()
         return instance
 
@@ -88,37 +98,24 @@ class CourseSerializer(serializers.Serializer):
 class EnrollmentSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     student = serializers.PrimaryKeyRelatedField(read_only=True)
-    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
-    teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    course_offering = serializers.PrimaryKeyRelatedField(queryset=CourseOffering.objects.all())
     enrolled_at = serializers.DateTimeField(read_only=True)
+    grade = serializers.CharField(max_length=2, required=False, allow_blank=True, allow_null=True)
 
-    course_title = serializers.ReadOnlyField(source='course.title')
-    teacher_name = serializers.ReadOnlyField(source='teacher.username')
+    # Fields for display
+    course_title = serializers.ReadOnlyField(source='course_offering.course.title')
+    teacher_name = serializers.ReadOnlyField(source='course_offering.teacher.username')
+    semester = serializers.ReadOnlyField(source='course_offering.semester')
+    year = serializers.ReadOnlyField(source='course_offering.year')
+    meet_link = serializers.ReadOnlyField(source='course_offering.meet_link')
+    class_description = serializers.ReadOnlyField(source='course_offering.class_description')
     student_name = serializers.ReadOnlyField(source='student.username')
-    
- 
-    meet_link = serializers.SerializerMethodField()
-    class_description = serializers.SerializerMethodField()
-    
-    def get_meet_link(self, obj):
-        try:
-            offering = CourseOffering.objects.get(teacher=obj.teacher, course=obj.course)
-            return offering.meet_link
-        except CourseOffering.DoesNotExist:
-            return None
-    
-    def get_class_description(self, obj):
-        try:
-            offering = CourseOffering.objects.get(teacher=obj.teacher, course=obj.course)
-            return offering.class_description
-        except CourseOffering.DoesNotExist:
-            return None
 
     def create(self, validated_data):
         return Enrollment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.course = validated_data.get('course', instance.course)
-        instance.teacher = validated_data.get('teacher', instance.teacher)
+        instance.course_offering = validated_data.get('course_offering', instance.course_offering)
+        instance.grade = validated_data.get('grade', instance.grade)
         instance.save()
         return instance

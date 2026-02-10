@@ -15,4 +15,4 @@ class CourseForm(forms.ModelForm):
 class EnrollmentForm(forms.ModelForm):
     class Meta:
         model = Enrollment
-        fields = ('course', 'teacher')
+        fields = ('course_offering',)

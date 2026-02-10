@@ -2,21 +2,110 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
-from .models import Course, Enrollment, CourseOffering, CustomUser
+from .models import Course, CourseOffering, CustomUser, Enrollment
 from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm
 from django.contrib import messages
+from django.template.loader import render_to_string
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import EmailMessage
+from .tokens import account_activation_token
+from django.contrib.auth import get_user_model
 
 def register(request):
-
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST) 
         if form.is_valid():
-            user = form.save() 
-            login(request, user)
-            return redirect('dashboard')
+            user = form.save(commit=False)
+            user.is_active = False  # Deactivate until OTP is verified
+            
+            # Generate 6-digit OTP
+            import random
+            from django.utils import timezone
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
+            user.otp_created_at = timezone.now()
+            user.save()
+
+            # Send OTP via email
+            mail_subject = 'Verify your account - OTP Code'
+            message = f"""
+Hello {user.username},
+
+Thank you for registering! Please use the following OTP code to verify your account:
+
+OTP Code: {otp}
+
+This code will expire in 10 minutes.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+Learning Platform Team
+"""
+            email = EmailMessage(mail_subject, message, to=[user.email])
+            email.send()
+            
+            # Store user ID in session for OTP verification
+            request.session['pending_user_id'] = user.id
+            return redirect('verify_otp')
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+def verify_otp(request):
+    if request.method == 'POST':
+        otp_entered = request.POST.get('otp', '').strip()
+        user_id = request.session.get('pending_user_id')
+        
+        if not user_id:
+            messages.error(request, 'Session expired. Please register again.')
+            return redirect('register')
+        
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            messages.error(request, 'Invalid session. Please register again.')
+            return redirect('register')
+        
+        # Check if OTP matches
+        if user.otp != otp_entered:
+            messages.error(request, 'Invalid OTP code. Please try again.')
+            return render(request, 'registration/verify_otp.html')
+        
+        # Check if OTP has expired (10 minutes)
+        from django.utils import timezone
+        from datetime import timedelta
+        if user.otp_created_at:
+            # Make sure both datetimes are timezone-aware for comparison
+            otp_created = user.otp_created_at
+            if timezone.is_naive(otp_created):
+                otp_created = timezone.make_aware(otp_created)
+            
+            expiry_time = otp_created + timedelta(minutes=10)
+            if timezone.now() > expiry_time:
+                messages.error(request, 'OTP has expired. Please register again.')
+                user.delete()  # Clean up expired registration
+                return redirect('register')
+        
+        # OTP is valid - activate user
+        user.is_active = True
+        user.otp = None  # Clear OTP
+        user.otp_created_at = None
+        user.save()
+        
+        # Clear session
+        if 'pending_user_id' in request.session:
+            del request.session['pending_user_id']
+        
+        # Log the user in
+        login(request, user)
+        messages.success(request, 'Your account has been verified successfully!')
+        return redirect('dashboard')
+    
+    return render(request, 'registration/verify_otp.html')
 
 
 @login_required
@@ -83,17 +172,17 @@ def student_course_detail(request, course_id):
         offering_id = request.POST.get('offering_id')
         offering = get_object_or_404(CourseOffering, id=offering_id)
         teacher = offering.teacher
-        if Enrollment.objects.filter(student=request.user, course=course).exists():
-            messages.warning(request, 'You are already enrolled in this course.')
+        if Enrollment.objects.filter(student=request.user, course_offering=offering).exists():
+            messages.warning(request, 'You are already enrolled in this course offering.')
         else:
-            Enrollment.objects.create(student=request.user, course=course, teacher=teacher)
-            messages.success(request, f'Enrolled in {course.title} with {teacher.username}!')
+            Enrollment.objects.create(student=request.user, course_offering=offering)
+            messages.success(request, f'Successfully enrolled in {course.title}!')
             return redirect('student_dashboard')
             
     return render(request, 'dashboard/student_course_detail.html', {'course': course, 'offerings': offerings})
 
 from rest_framework import viewsets, permissions
-from .serializers import CourseSerializer, EnrollmentSerializer, UserSerializer, CourseOfferingSerializer
+from .serializers import CourseSerializer, UserSerializer, CourseOfferingSerializer, EnrollmentSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all() 
@@ -133,5 +222,5 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
         if user.role == 'student':
             return Enrollment.objects.filter(student=user)
         elif user.role == 'teacher':
-             return Enrollment.objects.filter(teacher=user)
+             return Enrollment.objects.filter(course_offering__teacher=user)
         return Enrollment.objects.all()
