@@ -41,7 +41,7 @@ Learning Platform Team
     # Send email
     try:
         email = EmailMessage(subject, message, to=[user.email])
-        email.send()
+        email.send(fail_silently=True)  # Don't block login if email fails
     except Exception as e:
         # Log the error but don't prevent login
         print(f"Failed to send login notification: {e}")
