@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import Course, Enrollment, CustomUser
+from .models import Course, Enrollment, CustomUser, CourseContent, CourseOffering
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -40,3 +40,19 @@ class EnrollmentForm(forms.ModelForm):
     class Meta:
         model = Enrollment
         fields = ('course_offering',)
+
+class CourseOfferingForm(forms.ModelForm):
+    class Meta:
+        model = CourseOffering
+        fields = ['course', 'semester', 'year']
+
+class CourseContentForm(forms.ModelForm):
+    class Meta:
+        model = CourseContent
+        fields = ['title', 'video', 'file', 'link']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lesson Title'}),
+            'video': forms.FileInput(attrs={'class': 'form-control'}),
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://meet.google.com/...'}),
+        }

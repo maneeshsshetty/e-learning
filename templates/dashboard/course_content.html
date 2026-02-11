@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4 dashboard-container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{% url 'student_course_detail' course.id %}"
+                class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Course Details
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-primary text-white overflow-hidden position-relative">
+                <div class="card-body p-4 position-relative z-1">
+                    <h2 class="fw-bold mb-1">{{ course.title }}</h2>
+                    <p class="opacity-75 mb-0">Course Content & Materials</p>
+                </div>
+                <div class="position-absolute top-0 end-0 h-100 w-50 bg-white opacity-10"
+                    style="transform: skewX(-20deg);"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-collection-play me-2"></i>Learning Materials
+                    </h5>
+                    <span class="badge bg-primary rounded-pill">{{ contents_count }} Items</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for offering in offerings %}
+                        {% if offering.contents.all %}
+                        <div
+                            class="list-group-item bg-light fw-bold text-muted small text-uppercase px-4 py-3 border-bottom">
+                            <i class="bi bi-person-video3 me-2"></i>Content from {{ offering.teacher.username }}
+                        </div>
+                        {% for content in offering.contents.all %}
+                        <div class="list-group-item px-4 py-4 hover-bg-light transition-all">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-4 position-relative">
+                                            {% if content.video %}
+                                            <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-flex align-items-center justify-content-center"
+                                                style="width: 50px; height: 50px;">
+                                                <i class="bi bi-play-fill fs-4 text-danger"></i>
+                                            </div>
+                                            {% elif content.file %}
+                                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center"
+                                                style="width: 50px; height: 50px;">
+                                                <i class="bi bi-file-text-fill fs-5 text-primary"></i>
+                                            </div>
+                                            {% else %}
+                                            <div class="rounded-circle bg-success bg-opacity-10 p-3 d-flex align-items-center justify-content-center"
+                                                style="width: 50px; height: 50px;">
+                                                <i class="bi bi-link-45deg fs-4 text-success"></i>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <h5 class="fw-bold mb-1">{{ content.title }}</h5>
+                                            <div class="d-flex gap-3 text-muted small">
+                                                <span><i class="bi bi-calendar3 me-1"></i>
+                                                    {{ content.created_at|date:"M d, Y" }}</span>
+                                                {% if content.video %}
+                                                <span><i class="bi bi-film me-1"></i>Video Lesson</span>
+                                                {% elif content.file %}
+                                                <span><i class="bi bi-file-earmark me-1"></i>Document</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end mt-3 mt-md-0">
+                                    <div class="d-flex flex-column gap-2 justify-content-end align-items-end">
+                                        {% if content.video %}
+                                        <a href="{{ content.video.url }}" target="_blank"
+                                            class="btn btn-danger rounded-pill px-4 shadow-sm hover-scale d-flex align-items-center justify-content-center"
+                                            style="min-width: 200px;">
+                                            <i class="bi bi-play-circle-fill me-2"></i>
+                                            <span>Watch Video</span>
+                                        </a>
+                                        {% endif %}
+
+                                        {% if content.file %}
+                                        <a href="{{ content.file.url }}" download target="_blank"
+                                            class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale d-flex align-items-center justify-content-center"
+                                            style="min-width: 200px;">
+                                            <i class="bi bi-cloud-arrow-down-fill me-2"></i>
+                                            <span>Download Resources</span>
+                                        </a>
+                                        {% endif %}
+
+                                        {% if content.link %}
+                                        <a href="{{ content.link }}" target="_blank"
+                                            class="btn btn-success rounded-pill px-4 shadow-sm hover-scale d-flex align-items-center justify-content-center"
+                                            style="min-width: 200px;">
+                                            <i class="bi bi-box-arrow-up-right me-2"></i>
+                                            <span>Open External Link</span>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% empty %}
+                        <div class="p-5 text-center">
+                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png"
+                                style="width: 80px; opacity: 0.5" class="mb-3">
+                            <h5 class="text-muted">No content available yet</h5>
+                            <p class="text-muted small">Check back later for new materials.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            padding: 30px;
+            color: #333;
+            text-align: center;
+        }
+
+        .otp-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: #666;
+            margin: 20px 0;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            text-align: left;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>✉️ Verify Your Email Address</h1>
+        </div>
+
+        <div class="content">
+            <p>Welcome <strong>{{ username }}</strong>!</p>
+
+            <p>Thank you for registering on the Learning Platform. To complete your registration, please verify your
+                email address using the OTP code below:</p>
+
+            <div class="otp-box">
+                {{ otp }}
+            </div>
+
+            <div class="info-text">
+                <strong>This code will expire in 10 minutes.</strong>
+            </div>
+
+            <div class="instructions">
+                <p><strong>How to verify:</strong></p>
+                <ol>
+                    <li>Return to the registration page</li>
+                    <li>Enter the 6-digit OTP code shown above</li>
+                    <li>Click "Verify" to activate your account</li>
+                </ol>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Security Note:</strong> If you did not create an account on Learning Platform, please ignore
+                this email. The account will not be activated without verification.
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message from Learning Platform.</p>
+            <p>Need help? Contact our support team.</p>
+            <p>© 2026 Learning Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

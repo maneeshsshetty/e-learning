@@ -2,22 +2,189 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-header text-center">
-                <h4>Login</h4>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary-color: #0f172a;
+        /* Deep Slate */
+        --accent-color: #2563eb;
+        /* Modern Blue */
+        --bg-color: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+    }
+
+    /* Reset/Fix for background */
+    body,
+    html {
+        height: 100%;
+        background-color: var(--bg-color);
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Absolute Centering Wrapper */
+    .auth-wrapper {
+        min-height: 90vh;
+        /* Adjust based on navbar height */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+
+    .auth-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 420px;
+        padding: 48px 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+        transition: transform 0.3s ease;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .auth-header h2 {
+        font-weight: 700;
+        color: var(--primary-color);
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+    }
+
+    .auth-header p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+
+    /* Customizing Crispy Forms for Modern Look */
+    #div_id_username,
+    #div_id_password {
+        margin-bottom: 20px;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-color);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        outline: none;
+    }
+
+    .form-label {
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: var(--text-main);
+        margin-bottom: 6px;
+    }
+
+    /* Modern Dark Button */
+    .btn-login {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        padding: 14px;
+        border-radius: 10px;
+        border: none;
+        width: 100%;
+        margin-top: 12px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-login:hover {
+        background-color: #000000;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .auth-footer {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .auth-footer a {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+
+    /* Subtle Micro-interaction */
+    .auth-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Welcome back</h2>
+            <p>Please enter your details to sign in.</p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group-wrapper">
+                {{ form|crispy }}
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <button type="submit" class="btn btn-dark w-100 mt-3">Login</button>
-                    <p class="mt-3 text-center text-muted">Don't have an account? <a
-                            href="{% url 'register' %}">Register</a></p>
-                </form>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check small">
+                    <input type="checkbox" class="form-check-input" id="remember">
+                    <label class="form-check-label text-muted" for="remember">Remember me</label>
+                </div>
+                <a href="#" class="small text-decoration-none fw-medium" style="color: var(--accent-color);">Forgot
+                    password?</a>
             </div>
+
+            <button type="submit" class="btn-login">
+                <span>Sign in</span>
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{% url 'register' %}">Create account</a>
         </div>
     </div>
 </div>
+
+<script>
+    // Simple logic to add "bi bi-arrow-right" icon if Bootstrap Icons aren't loaded
+    // and handle the loading state
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function () {
+        const btn = document.querySelector('.btn-login');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signin in...';
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}

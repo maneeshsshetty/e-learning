@@ -57,19 +57,14 @@ SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
 SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
 
-# Email Configuration
-# Use console backend in development if email credentials are not set
-if DEBUG and not os.getenv('EMAIL_HOST_USER'):
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email Configuration - Brevo API
+# Using Brevo's Transactional Email API instead of SMTP
+BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL')
 
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@example.com'
+# Keep Django email backend for compatibility
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
+DEFAULT_FROM_EMAIL = BREVO_SENDER_EMAIL or 'noreply@example.com'
 
 # PayPal Configuration
 PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  # 'sandbox' or 'live'
@@ -89,6 +84,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'crispy_forms',
     'crispy_bootstrap5',
+    'cloudinary_storage', # Cloudinary Storage
+    'cloudinary',         # Cloudinary
     'courses',
 ]
 
@@ -172,10 +169,17 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # For collectstatic in production
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Cloudinary Configuration
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
+
 # Whitenoise configuration for production static files
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",

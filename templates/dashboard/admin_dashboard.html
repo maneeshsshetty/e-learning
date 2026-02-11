@@ -1,49 +1,155 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
+{% block title %}Admin Control Center{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-12 mb-4 text-center">
-        <h2>Admin Dashboard</h2>
-        <p class="text-muted">Manage Courses, Teachers, and Students</p>
+<style>
+    /* Admin Specific Styles */
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 16px;
+    }
+
+    .card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 20px 24px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .table thead th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        color: #64748b;
+        border-top: none;
+    }
+
+    .course-img {
+        width: 45px;
+        height: 45px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="fw-800 mb-1" style="letter-spacing: -1px;">Admin Control Center</h2>
+        <p class="text-muted mb-0">Platform overview and management</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <button class="btn btn-primary btn-auth shadow-sm"
+            onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})">
+            <i class="bi bi-people me-2"></i> Manage Users
+        </button>
     </div>
 </div>
 
-<div class="row mb-5">
-    <!-- Course Creation & List -->
+<div class="row mb-5 g-4">
     <div class="col-md-4">
-        <div class="card mb-4 h-100">
-            <div class="card-header">Create New Course</div>
-            <div class="card-body">
-                <!-- Keep Standard POST for File Upload Convenience for now -->
+        <div class="stat-card">
+            <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <h6 class="text-muted fw-semibold">Active Courses</h6>
+            <h3 class="fw-bold mb-0" id="stat-courses-count">0</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-person-badge-fill"></i></div>
+            <h6 class="text-muted fw-semibold">Faculty Members</h6>
+            <h3 class="fw-bold mb-0" id="stat-teachers-count">0</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-mortarboard-fill"></i></div>
+            <h6 class="text-muted fw-semibold">Total Students</h6>
+            <h3 class="fw-bold mb-0" id="stat-students-count">0</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 100px;">
+            <div class="card-header">
+                <i class="bi bi-plus-circle me-2"></i>Create New Course
+            </div>
+            <div class="card-body p-4">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    {{ form|crispy }}
-                    <button type="submit" class="btn btn-dark mt-3 w-100">Create Course</button>
+                    <div class="custom-crispy-styling">
+                        {{ form|crispy }}
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 py-3 fw-bold mt-3" style="border-radius: 12px;">
+                        Launch Course
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <div class="card h-100">
-            <div class="card-header">All Courses</div>
-            <div class="card-body">
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-stack me-2"></i>Current Catalog</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="fetchCourses()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
                             <tr>
-                                <th>Photo</th>
-                                <th>Title</th>
-                                <th>Description</th>
-                                <th>Teachers</th>
-                                <th>Actions</th>
+                                <th class="ps-4">Details</th>
+                                <th>Curriculum</th>
+                                <th>Faculty</th>
+                                <th class="text-end pe-4">Manage</th>
                             </tr>
                         </thead>
                         <tbody id="courses-list-body">
-                            <!-- JS will populate -->
                             <tr>
-                                <td colspan="4" class="text-center">
-                                    <div class="spinner-border text-primary"></div>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="spinner-grow text-primary" role="status"></div>
                                 </td>
                             </tr>
                         </tbody>
@@ -54,117 +160,175 @@
     </div>
 </div>
 
-<hr class="my-5">
-
-<!-- Users Lists -->
-<div class="row">
-    <!-- Teachers List -->
+<div class="row g-4">
     <div class="col-md-6">
-        <div class="card mb-4">
+        <div class="card shadow-sm border-0">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Teachers List</span>
-                <span id="teachers-count" class="badge bg-dark">0 Total</span>
+                <span><i class="bi bi-person-badge me-2"></i>Teachers</span>
+                <span id="teachers-count" class="badge bg-primary-subtle text-primary rounded-pill">0</span>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teachers-list-body">
-                            <!-- JS will populate -->
-                            <tr>
-                                <td colspan="3" class="text-center">
-                                    <div class="spinner-border text-primary"></div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <tbody id="teachers-list-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
-
-    <!-- Students List -->
     <div class="col-md-6">
-        <div class="card mb-4">
+        <div class="card shadow-sm border-0">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Students List</span>
-                <span id="students-count" class="badge bg-dark">0 Total</span>
+                <span><i class="bi bi-mortarboard me-2"></i>Students</span>
+                <span id="students-count" class="badge bg-info-subtle text-info rounded-pill">0</span>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-list-body">
-                            <!-- JS will populate -->
-                            <tr>
-                                <td colspan="3" class="text-center">
-                                    <div class="spinner-border text-primary"></div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <tbody id="students-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Course Modal -->
+<div class="modal fade" id="editCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editCourseForm">
+                    <input type="hidden" id="edit-course-id">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Title</label>
+                        <input type="text" class="form-control" id="edit-title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Description</label>
+                        <textarea class="form-control" id="edit-description" rows="3" required></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="edit-price" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Teacher</label>
+                            <select class="form-select" id="edit-teacher">
+                                <option value="">Select Teacher...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="edit-is-free">
+                        <label class="form-check-label fw-semibold" for="edit-is-free">Mark as Free Course</label>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Course Cover Image</label>
+                        <input type="file" class="form-control" id="edit-photo" accept="image/*">
+                        <div class="mt-2" id="current-photo-preview"></div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary py-2 fw-bold" style="border-radius: 8px;">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Global variable to store modal instance
+    let editModal;
+
     document.addEventListener('DOMContentLoaded', function () {
         Promise.all([fetchCourses(), fetchTeachers(), fetchStudents()]);
+        editModal = new bootstrap.Modal(document.getElementById('editCourseModal'));
+
+        // Populate teacher dropdown in edit modal
+        loadTeachersDropdown();
+
+        // Handle Edit Form Submission
+        document.getElementById('editCourseForm').addEventListener('submit', handleEditSubmit);
     });
 
+    async function loadTeachersDropdown() {
+        try {
+            const response = await fetch('/api/users/?role=teacher');
+            const data = await response.json();
+            const teachers = data.results || data;
+            const select = document.getElementById('edit-teacher');
+            select.innerHTML = '<option value="">Select Teacher...</option>'; // Reset
+
+            teachers.forEach(teacher => {
+                select.insertAdjacentHTML('beforeend', `<option value="${teacher.id}">${teacher.username}</option>`);
+            });
+        } catch (error) {
+            console.error('Error loading teachers for dropdown:', error);
+        }
+    }
+
+    // --- Courses Management ---
     async function fetchCourses() {
         try {
             const response = await fetch('/api/courses/');
             const courses = await response.json();
+
+            // Update Stats
+            const count = courses.length || 0;
+            document.getElementById('stat-courses-count').innerText = count;
+
             const tbody = document.getElementById('courses-list-body');
             tbody.innerHTML = '';
 
-            if (courses.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No courses yet.</td></tr>';
+            if (count === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No active courses found.</td></tr>';
                 return;
             }
 
             courses.forEach(course => {
-                const photoUrl = course.photo || ''; // API includes full URL if serialized correctly, or null
+                const photoUrl = course.photo || '';
                 const photoHtml = photoUrl ?
-                    `<img src="${photoUrl}" alt="${course.title}" style="height: 40px;" class="rounded">` :
-                    '<span class="text-muted small">No IMG</span>';
+                    `<img src="${photoUrl}" class="course-img me-3">` :
+                    `<div class="course-img bg-light me-3 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-image"></i></div>`;
 
-                // Use teacher_count from API
-                const teacherCount = course.teacher_count || 0;
+                // Store course object in data attribute for easy access
+                const courseData = encodeURIComponent(JSON.stringify(course));
 
                 const html = `
                 <tr id="course-${course.id}">
-                    <td>${photoHtml}</td>
-                    <td class="fw-bold">${course.title}</td>
-                    <td class="text-muted small">${course.description ? course.description.substring(0, 50) + '...' : ''}</td>
-                    <td><span class="badge bg-secondary rounded-pill">${teacherCount}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')"
-                            title="Edit Course">
-                            <i class="bi bi-pencil"></i>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            ${photoHtml}
+                            <div>
+                                <div class="fw-bold text-dark">${course.title}</div>
+                                <div class="small text-muted">ID: #${course.id}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="small text-muted">${course.description ? course.description.substring(0, 40) + '...' : 'No description'}</td>
+                    <td><span class="badge bg-secondary-subtle text-secondary">${course.teacher_count || 0} Assigned</span></td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-action btn-outline-primary me-1" onclick="openEditModal('${courseData}')">
+                            <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')"
-                            title="Delete Course">
-                            <i class="bi bi-trash"></i>
+                        <button class="btn btn-action btn-outline-danger" onclick="deleteCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')">
+                            <i class="bi bi-trash3"></i>
                         </button>
                     </td>
-                </tr>
-                `;
+                </tr>`;
                 tbody.insertAdjacentHTML('beforeend', html);
             });
         } catch (error) {
@@ -172,35 +336,143 @@
         }
     }
 
+    async function deleteCourse(courseId, courseTitle) {
+        if (!confirm(`Are you sure you want to delete "${courseTitle}"?`)) return;
+
+        try {
+            const response = await fetch(`/api/courses/${courseId}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            });
+
+            if (response.ok || response.status === 204) {
+                document.getElementById(`course-${courseId}`).remove();
+
+                // Update stats
+                const statEl = document.getElementById('stat-courses-count');
+                statEl.innerText = Math.max(0, parseInt(statEl.innerText) - 1);
+
+                alert('Course deleted successfully');
+            } else {
+                alert('Failed to delete course');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error deleting course');
+        }
+    }
+
+    function openEditModal(courseDataEncoded) {
+        const course = JSON.parse(decodeURIComponent(courseDataEncoded));
+
+        // Populate fields
+        document.getElementById('edit-course-id').value = course.id;
+        document.getElementById('edit-title').value = course.title;
+        document.getElementById('edit-description').value = course.description || '';
+        document.getElementById('edit-price').value = course.price;
+        document.getElementById('edit-teacher').value = course.teacher || ''; // Assumes serializer sends teacher ID
+        document.getElementById('edit-is-free').checked = course.is_free;
+
+        // Preview current image
+        const previewEl = document.getElementById('current-photo-preview');
+        if (course.photo) {
+            previewEl.innerHTML = `<small class="text-muted d-block mb-1">Current Image:</small><img src="${course.photo}" style="height: 60px; border-radius: 6px;">`;
+        } else {
+            previewEl.innerHTML = '';
+        }
+
+        editModal.show();
+    }
+
+    async function handleEditSubmit(e) {
+        e.preventDefault();
+
+        const courseId = document.getElementById('edit-course-id').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+        const formData = new FormData();
+        formData.append('title', document.getElementById('edit-title').value.trim());
+        formData.append('description', document.getElementById('edit-description').value.trim());
+        formData.append('price', document.getElementById('edit-price').value);
+        formData.append('teacher', document.getElementById('edit-teacher').value || ''); // Send empty string if no teacher
+        formData.append('is_free', document.getElementById('edit-is-free').checked ? 'True' : 'False'); // FormData expects string boolean for Django sometimes handling specially or just convert to JSON if not file
+
+        const photoFile = document.getElementById('edit-photo').files[0];
+        if (photoFile) {
+            formData.append('photo_file', photoFile); // Note: Serializer expects 'photo_file' for updates usually or we can check
+        }
+
+        try {
+            const response = await fetch(`/api/courses/${courseId}/`, {
+                method: 'PATCH', // Use PATCH for partial updates, though we are sending most fields
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                    // Do NOT set Content-Type header when sending FormData; browser sets it with boundary
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                editModal.hide();
+                fetchCourses(); // Refresh list to show updates
+                alert('Course updated successfully!');
+            } else {
+                const errorData = await response.json();
+                console.error('Update failed:', errorData);
+                alert('Failed to update course: ' + JSON.stringify(errorData));
+            }
+        } catch (error) {
+            console.error('Error updating course:', error);
+            alert('An error occurred while updating the course.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    }
+
+    // --- Teachers Management ---
     async function fetchTeachers() {
         try {
             const response = await fetch('/api/users/?role=teacher');
             const data = await response.json();
-            // API pagination handling: if paginated, data.results. If not, data.
-            const teachers = data.results ? data.results : data;
+            const teachers = data.results || data;
+
+            // Update Stats (both card and badge)
+            const count = teachers.length || 0;
+            document.getElementById('stat-teachers-count').innerText = count;
+            const badge = document.getElementById('teachers-count');
+            if (badge) badge.innerText = count;
 
             const tbody = document.getElementById('teachers-list-body');
-            document.getElementById('teachers-count').innerText = `${teachers.length} Total`;
             tbody.innerHTML = '';
 
-            if (teachers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No teachers found.</td></tr>';
+            if (count === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No teachers found.</td></tr>';
                 return;
             }
 
             teachers.forEach(teacher => {
                 const html = `
                 <tr id="teacher-${teacher.id}">
-                    <td class="fw-bold">${teacher.username}</td>
+                    <td class="ps-3 fw-bold text-dark">
+                        <div class="d-flex align-items-center gap-2">
+                             <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-weight:bold;font-size:0.8rem">
+                                ${teacher.username.charAt(0).toUpperCase()}
+                            </div>
+                            ${teacher.username}
+                        </div>
+                    </td>
                     <td class="small text-muted">${teacher.email}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTeacher(${teacher.id}, '${teacher.username.replace(/'/g, "\\'")}')"
-                            title="Delete Teacher">
-                            <i class="bi bi-trash"></i>
+                    <td class="text-end pe-3">
+                         <button class="btn btn-action btn-outline-danger btn-sm" onclick="deleteTeacher(${teacher.id}, '${teacher.username}')">
+                            <i class="bi bi-trash3"></i>
                         </button>
                     </td>
-                </tr>
-                `;
+                </tr>`;
                 tbody.insertAdjacentHTML('beforeend', html);
             });
         } catch (error) {
@@ -208,34 +480,74 @@
         }
     }
 
+    async function deleteTeacher(id, name) {
+        if (!confirm(`Delete teacher "${name}"? This action cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(`/api/users/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            });
+
+            if (response.ok || response.status === 204) {
+                document.getElementById(`teacher-${id}`).remove();
+
+                // Update stats
+                const statEl = document.getElementById('stat-teachers-count');
+                const badge = document.getElementById('teachers-count');
+                const newCount = Math.max(0, parseInt(statEl.innerText) - 1);
+
+                statEl.innerText = newCount;
+                if (badge) badge.innerText = newCount;
+
+                alert('Teacher deleted successfully');
+            } else {
+                alert('Failed to delete teacher');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // --- Students Management ---
     async function fetchStudents() {
         try {
             const response = await fetch('/api/users/?role=student');
             const data = await response.json();
-            const students = data.results ? data.results : data;
+            const students = data.results || data;
+
+            // Update Stats
+            const count = students.length || 0;
+            document.getElementById('stat-students-count').innerText = count;
+            const badge = document.getElementById('students-count');
+            if (badge) badge.innerText = count;
 
             const tbody = document.getElementById('students-list-body');
-            document.getElementById('students-count').innerText = `${students.length} Total`;
             tbody.innerHTML = '';
 
-            if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No students found.</td></tr>';
+            if (count === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No students found.</td></tr>';
                 return;
             }
 
             students.forEach(student => {
                 const html = `
                 <tr id="student-${student.id}">
-                    <td class="fw-bold">${student.username}</td>
+                    <td class="ps-3 fw-bold text-dark">
+                         <div class="d-flex align-items-center gap-2">
+                             <div class="bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-weight:bold;font-size:0.8rem">
+                                ${student.username.charAt(0).toUpperCase()}
+                            </div>
+                            ${student.username}
+                        </div>
+                    </td>
                     <td class="small text-muted">${student.email}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent(${student.id}, '${student.username.replace(/'/g, "\\'")}')" 
-                            title="Delete Student">
-                            <i class="bi bi-trash"></i>
+                    <td class="text-end pe-3">
+                         <button class="btn btn-action btn-outline-danger btn-sm" onclick="deleteStudent(${student.id}, '${student.username}')">
+                            <i class="bi bi-trash3"></i>
                         </button>
                     </td>
-                </tr>
-                `;
+                </tr>`;
                 tbody.insertAdjacentHTML('beforeend', html);
             });
         } catch (error) {
@@ -243,146 +555,36 @@
         }
     }
 
-    // Delete Course Function
-    async function deleteCourse(courseId, courseTitle) {
-        if (!confirm(`Are you sure you want to delete "${courseTitle}"?\n\nThis action cannot be undone and will remove all associated data.`)) {
-            return;
-        }
+    async function deleteStudent(id, name) {
+        if (!confirm(`Delete student "${name}"? This action cannot be undone.`)) return;
 
         try {
-            const response = await fetch(`/api/courses/${courseId}/`, {
+            const response = await fetch(`/api/users/${id}/`, {
                 method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
             });
 
             if (response.ok || response.status === 204) {
-                // Remove row from table
-                const row = document.getElementById(`course-${courseId}`);
-                if (row) {
-                    row.remove();
-                }
-                alert(`Course "${courseTitle}" deleted successfully!`);
+                document.getElementById(`student-${id}`).remove();
+
+                // Update stats
+                const statEl = document.getElementById('stat-students-count');
+                const badge = document.getElementById('students-count');
+                const newCount = Math.max(0, parseInt(statEl.innerText) - 1);
+
+                statEl.innerText = newCount;
+                if (badge) badge.innerText = newCount;
+
+                alert('Student deleted successfully');
             } else {
-                alert('Failed to delete course. Please try again.');
+                alert('Failed to delete student');
             }
         } catch (error) {
-            console.error('Error deleting course:', error);
-            alert('An error occurred while deleting the course.');
+            console.error('Error:', error);
         }
     }
 
-    // Edit Course Function
-    function editCourse(courseId, courseTitle) {
-        const newTitle = prompt(`Edit course title:`, courseTitle);
-
-        if (newTitle === null || newTitle.trim() === '') {
-            return; // User cancelled or entered empty string
-        }
-
-        if (newTitle === courseTitle) {
-            alert('No changes made.');
-            return;
-        }
-
-        updateCourse(courseId, newTitle.trim());
-    }
-
-    async function updateCourse(courseId, newTitle) {
-        try {
-            const response = await fetch(`/api/courses/${courseId}/`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({ title: newTitle })
-            });
-
-            if (response.ok) {
-                alert('Course updated successfully!');
-                fetchCourses(); // Refresh the list
-            } else {
-                alert('Failed to update course. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error updating course:', error);
-            alert('An error occurred while updating the course.');
-        }
-    }
-
-    // Delete Teacher Function
-    async function deleteTeacher(teacherId, teacherName) {
-        if (!confirm(`Are you sure you want to delete teacher "${teacherName}"?\n\nThis will remove the teacher account and all associated data.`)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/users/${teacherId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-
-            if (response.ok || response.status === 204) {
-                // Remove row from table
-                const row = document.getElementById(`teacher-${teacherId}`);
-                if (row) {
-                    row.remove();
-                }
-                // Update count
-                const countBadge = document.getElementById('teachers-count');
-                const currentCount = parseInt(countBadge.innerText);
-                countBadge.innerText = `${currentCount - 1} Total`;
-
-                alert(`Teacher "${teacherName}" deleted successfully!`);
-            } else {
-                alert('Failed to delete teacher. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error deleting teacher:', error);
-            alert('An error occurred while deleting the teacher.');
-        }
-    }
-
-    // Delete Student Function
-    async function deleteStudent(studentId, studentName) {
-        if (!confirm(`Are you sure you want to delete student "${studentName}"?\n\nThis will remove the student account and all associated data.`)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/users/${studentId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-
-            if (response.ok || response.status === 204) {
-                // Remove row from table
-                const row = document.getElementById(`student-${studentId}`);
-                if (row) {
-                    row.remove();
-                }
-                // Update count
-                const countBadge = document.getElementById('students-count');
-                const currentCount = parseInt(countBadge.innerText);
-                countBadge.innerText = `${currentCount - 1} Total`;
-
-                alert(`Student "${studentName}" deleted successfully!`);
-            } else {
-                alert('Failed to delete student. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error deleting student:', error);
-            alert('An error occurred while deleting the student.');
-        }
-    }
-
-    // Helper function to get CSRF token
+    // --- Helper ---
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

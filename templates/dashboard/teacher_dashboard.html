@@ -43,6 +43,81 @@
     </div>
 </div>
 
+<!-- Shared Modals -->
+<div class="modal fade" id="editClassModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="offering_id" id="edit_offering_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Class Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Meeting Link</label>
+                        <input type="url" name="meet_link" id="edit_meet_link" class="form-control"
+                            placeholder="https://meet.google.com/...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Class Description</label>
+                        <textarea name="class_description" id="edit_class_desc" class="form-control"
+                            rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="update_details" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addContentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="offering_id" id="content_offering_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" required
+                            placeholder="Lesson 1: Introduction">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Video (Optional)</label>
+                        <input type="file" name="video" class="form-control" accept="video/*">
+                        <div class="form-text">Upload video lectures here.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">File Resource (Optional)</label>
+                        <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip">
+                        <div class="form-text">Notes, assignments, or slides.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">External Link (Optional)</label>
+                        <input type="url" name="link" class="form-control" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="add_content" class="btn btn-success">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         Promise.all([fetchCourses(), fetchMyOfferings()]);
@@ -50,9 +125,28 @@
 
     let myTeachingCourseIds = [];
 
+    // Helper to format date
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Modal Helpers
+    function editClassDetails(id, link, desc) {
+        document.getElementById('edit_offering_id').value = id;
+        document.getElementById('edit_meet_link').value = link;
+        document.getElementById('edit_class_desc').value = desc;
+        new bootstrap.Modal(document.getElementById('editClassModal')).show();
+    }
+
+    function openAddContentModal(id) {
+        document.getElementById('content_offering_id').value = id;
+        new bootstrap.Modal(document.getElementById('addContentModal')).show();
+    }
+
     async function fetchMyOfferings() {
         try {
-            // New Endpoint we created: /api/offerings/?teacher=ME (handled by backend logic)
             const response = await fetch('/api/offerings/');
             const offerings = await response.json();
 
@@ -66,9 +160,46 @@
                 noMsg.classList.add('d-none');
             }
 
-            myTeachingCourseIds = offerings.map(o => o.course); // Store IDs to check against available courses
+            myTeachingCourseIds = offerings.map(o => o.course);
 
             offerings.forEach(offering => {
+                // Generate Content List HTML
+                let contentHtml = '';
+                if (offering.contents && offering.contents.length > 0) {
+                    offering.contents.forEach(content => {
+                        let icon = '<i class="bi bi-link-45deg fs-4 text-success"></i>';
+                        if (content.video) icon = '<i class="bi bi-play-circle-fill fs-4 text-danger"></i>';
+                        else if (content.file) icon = '<i class="bi bi-file-earmark-text-fill fs-4 text-primary"></i>';
+
+                        // Escape IDs for JS safety
+                        const contentId = content.id;
+
+                        contentHtml += `
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3 text-secondary">${icon}</div>
+                                <div>
+                                    <div class="fw-semibold">${content.title}</div>
+                                    <small class="text-muted">${formatDate(content.created_at)}</small>
+                                </div>
+                            </div>
+                            <form method="post" onsubmit="return confirm('Delete this content?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="content_id" value="${contentId}">
+                                <button type="submit" name="delete_content" class="btn btn-sm btn-outline-danger border-0">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        `;
+                    });
+                } else {
+                    contentHtml = '<div class="text-center py-3 text-muted small bg-light rounded-3">No content added yet.</div>';
+                }
+
+                // Properly escape class description for JS string
+                const desc = (offering.class_description || '').replace(/'/g, "\\'").replace(/\n/g, "\\n");
+
                 const html = `
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="heading${offering.id}">
@@ -80,28 +211,44 @@
                     <div id="collapse${offering.id}" class="accordion-collapse collapse"
                         data-bs-parent="#myOfferingsAccordion">
                         <div class="accordion-body">
-                            <!-- Keeping Standard POST for Simplicity, user can upgrade to API POST later -->
-                            <form method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="offering_id" value="${offering.id}">
-
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Google Meet Link</label>
-                                    <input type="url" name="meet_link" class="form-control"
-                                        value="${offering.meet_link || ''}"
-                                        placeholder="https://meet.google.com/..." required>
+                            
+                            <!-- Actions Row -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <h6 class="fw-bold mb-0">Class Management</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary me-2" type="button" onclick="editClassDetails(${offering.id}, '${offering.meet_link || ''}', '${desc}')">
+                                        <i class="bi bi-pencil me-1"></i> Edit Details
+                                    </button>
+                                    <button class="btn btn-sm btn-success" type="button" onclick="openAddContentModal(${offering.id})">
+                                        <i class="bi bi-plus-lg me-1"></i> Add Content
+                                    </button>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Class Description</label>
-                                    <textarea name="class_description" class="form-control" rows="3"
-                                        placeholder="Time, agenda, prerequisites...">${offering.class_description || ''}</textarea>
+                            <!-- Class Info -->
+                            <div class="bg-light rounded-3 p-3 mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1">Meeting Link</label>
+                                        <div>
+                                            ${offering.meet_link ?
+                        `<a href="${offering.meet_link}" target="_blank" class="text-primary text-decoration-none d-flex align-items-center"><i class="bi bi-camera-video-fill me-2"></i>Join Class</a>`
+                        : '<span class="text-muted fst-italic">No link added</span>'}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1">Description</label>
+                                        <div class="small">${offering.class_description || 'No description provided.'}</div>
+                                    </div>
                                 </div>
+                            </div>
 
-                                <div class="d-grid">
-                                    <button type="submit" name="update_details" class="btn btn-dark btn-sm">Save Details</button>
-                                </div>
-                            </form>
+                            <!-- Content List section -->
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Classroom Content</h6>
+                            <div class="list-group list-group-flush mb-3">
+                                ${contentHtml}
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -109,7 +256,6 @@
                 listContainer.insertAdjacentHTML('beforeend', html);
             });
 
-            // Re-render courses to update "Teaching" badges
             renderCoursesList(window.cachedCourses || []);
 
         } catch (error) {
@@ -121,7 +267,7 @@
         try {
             const response = await fetch('/api/courses/');
             const courses = await response.json();
-            window.cachedCourses = courses; // Cache for re-use
+            window.cachedCourses = courses;
             renderCoursesList(courses);
         } catch (error) {
             console.error('Error fetching courses:', error);
@@ -139,12 +285,10 @@
 
         courses.forEach(course => {
             const isTeaching = myTeachingCourseIds.includes(course.id);
-
             let actionHtml = '';
             if (isTeaching) {
                 actionHtml = '<span class="badge bg-dark rounded-pill">Teaching</span>';
             } else {
-                // Standard POST Form for Opting In
                 actionHtml = `
                 <form method="post" action="{% url 'teacher_dashboard' %}" class="d-inline">
                     {% csrf_token %}

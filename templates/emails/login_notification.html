@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Notification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            padding: 30px;
+            color: #333;
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-item {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🔐 New Login Detected</h1>
+        </div>
+
+        <div class="content">
+            <p>Hello <strong>{{ username }}</strong>,</p>
+
+            <p>We detected a new login to your account on the Learning Platform.</p>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">Time:</span> {{ timestamp }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">IP Address:</span> {{ ip_address }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Device/Browser:</span> {{ user_agent }}
+                </div>
+            </div>
+
+            <p><strong>If this was you</strong>, you can safely ignore this email.</p>
+
+            <div class="warning-box">
+                <strong>⚠️ If you did not log in</strong>, your account may be compromised. Please secure your account
+                immediately by changing your password.
+            </div>
+
+            <p>For your security, we recommend:</p>
+            <ul>
+                <li>Using a strong, unique password</li>
+                <li>Not sharing your login credentials</li>
+                <li>Logging out from shared devices</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated security notification from Learning Platform.</p>
+            <p>© 2026 Learning Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

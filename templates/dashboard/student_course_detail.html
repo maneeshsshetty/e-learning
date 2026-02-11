@@ -4,31 +4,13 @@
 <style>
     :root {
         --primary-color: #0f172a;
-        /* Slate 900 */
         --action-color: #2563eb;
-        /* Blue 600 */
         --surface-color: #ffffff;
         --bg-color: #f8fafc;
-        /* Slate 50 */
         --text-primary: #1e293b;
-        /* Slate 800 */
         --text-secondary: #64748b;
-        /* Slate 500 */
         --card-border: 1px solid #e2e8f0;
         --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-
-        /* Override Bootstrap Variables */
-        --bs-primary: #0f172a;
-        --bs-primary-rgb: 15, 23, 42;
-        --bs-success: #059669;
-        /* Emerald 600 */
-        --bs-success-rgb: 5, 150, 105;
-        --bs-info: #0891b2;
-        /* Cyan 600 */
-        --bs-info-rgb: 8, 145, 178;
-        --bs-warning: #d97706;
-        /* Amber 600 */
-        --bs-warning-rgb: 217, 119, 6;
     }
 
     body {
@@ -109,7 +91,6 @@
 </style>
 
 <div class="container-fluid px-4 dashboard-container">
-    <!-- Back Navigation -->
     <div class="row mb-4">
         <div class="col-12">
             <a href="{% url 'student_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
@@ -118,7 +99,6 @@
         </div>
     </div>
 
-    <!-- Course Header -->
     <div class="course-header">
         <div class="row g-0">
             <div class="col-md-5 position-relative">
@@ -130,68 +110,60 @@
                         <i class="bi bi-journal-richtext fs-1" style="font-size: 4rem !important; opacity: 0.8;"></i>
                     </div>
                     {% endif %}
-
                     <div class="price-badge">
-                        {% if course.is_free %}
-                        Free
-                        {% else %}
-                        ₹{{ course.price }}
-                        {% endif %}
+                        {% if course.is_free %}Free{% else %}₹{{ course.price }}{% endif %}
                     </div>
                 </div>
             </div>
             <div class="col-md-7">
                 <div class="course-meta h-100 d-flex flex-column justify-content-center">
                     <div class="mb-2">
-                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2">
-                            Course Detail
-                        </span>
-                        {% if has_paid %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2">Course
+                            Detail</span>
+                        {% if has_access %}
                         <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mb-2 ms-2">
-                            <i class="bi bi-check-circle me-1"></i>Paid
+                            <i class="bi bi-check-circle me-1"></i>Enrolled
                         </span>
                         {% endif %}
                     </div>
                     <h1 class="display-6 fw-bold mb-3">{{ course.title }}</h1>
                     <p class="text-muted lead mb-4">{{ course.description }}</p>
 
-                    {% if not course.is_free and course.price > 0 and not has_paid %}
+                    {% if has_access %}
+                    <div class="mb-4">
+                        <a href="{% url 'course_content_view' course.id %}"
+                            class="btn btn-success btn-lg rounded-pill px-5 shadow-sm">
+                            <i class="bi bi-collection-play me-2"></i>Go to Classroom
+                        </a>
+                    </div>
+                    {% elif not course.is_free and course.price > 0 %}
                     <div class="mb-4">
                         <a href="{% url 'course_payment_page' course.id %}"
                             class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
                             <i class="bi bi-cart-check me-2"></i>Buy Now - ₹{{ course.price }}
                         </a>
-                        <p class="small text-muted mt-2 mb-0">
-                            <i class="bi bi-shield-check me-1"></i>Secure payment via PayPal
-                        </p>
+                        <p class="small text-muted mt-2 mb-0"><i class="bi bi-shield-check me-1"></i>Secure payment via
+                            PayPal</p>
                     </div>
                     {% endif %}
 
                     <div class="d-flex gap-4 text-muted small">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-people-fill text-primary"></i>
-                            <span>Expert Instructors</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-award-fill text-warning"></i>
-                            <span>Certificate Included</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-clock-fill text-info"></i>
-                            <span>Lifetime Access</span>
-                        </div>
+                        <div class="d-flex align-items-center gap-2"><i
+                                class="bi bi-people-fill text-primary"></i><span>Expert Instructors</span></div>
+                        <div class="d-flex align-items-center gap-2"><i
+                                class="bi bi-award-fill text-warning"></i><span>Certificate Included</span></div>
+                        <div class="d-flex align-items-center gap-2"><i
+                                class="bi bi-clock-fill text-info"></i><span>Lifetime Access</span></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Instructors Section -->
     <div class="row mb-4">
         <div class="col-12 text-center mb-4">
-            {% if has_paid %}
-            <h3 class="fw-bold">Choose Your Instructor</h3>
-            <p class="text-muted">You've paid for this course! Select your preferred teacher to begin.</p>
+            {% if has_access %}
+            <h3 class="fw-bold">Your Instructor</h3>
             {% elif course.is_free or course.price == 0 %}
             <h3 class="fw-bold">Choose Your Instructor</h3>
             <p class="text-muted">Select a teacher to enroll in this free course</p>
@@ -208,10 +180,7 @@
             <div class="instructor-card">
                 <div class="bg-light" style="height: 100px;"></div>
                 <div class="px-4 pb-4 text-center">
-                    <div class="avatar-circle">
-                        {{ offering.teacher.username|first|upper }}
-                    </div>
-
+                    <div class="avatar-circle">{{ offering.teacher.username|first|upper }}</div>
                     <h5 class="fw-bold mb-1">{{ offering.teacher.username }}</h5>
                     <p class="text-muted small mb-3">Course Instructor</p>
 
@@ -222,7 +191,6 @@
                             <span>{{ offering.semester }} {{ offering.year }}</span>
                         </div>
                         {% endif %}
-
                         {% if offering.class_description %}
                         <div class="d-flex gap-2 small text-muted">
                             <i class="bi bi-info-circle text-primary mt-1"></i>
@@ -239,10 +207,16 @@
                         <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">
                             Enroll for Free <i class="bi bi-arrow-right ms-1"></i>
                         </button>
-                        {% elif has_paid %}
+                        {% elif has_access %}
+                        {% if is_enrolled %}
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm" disabled>
+                            <i class="bi bi-check-circle-fill me-1"></i> Enrolled
+                        </button>
+                        {% else %}
                         <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm">
                             Select This Teacher <i class="bi bi-check-circle ms-1"></i>
                         </button>
+                        {% endif %}
                         {% else %}
                         <a href="{% url 'course_payment_page' course.id %}"
                             class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm">

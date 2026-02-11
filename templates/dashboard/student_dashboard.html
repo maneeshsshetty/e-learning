@@ -1,347 +1,266 @@
 {% extends 'base.html' %}
 
+{% block title %}My Learning Dashboard{% endblock %}
+
 {% block content %}
 <style>
     :root {
-        --primary-color: #0f172a;
-        /* Slate 900 */
-        --action-color: #2563eb;
-        /* Blue 600 */
-        --surface-color: #ffffff;
-        --bg-color: #f8fafc;
-        /* Slate 50 */
-        --text-primary: #1e293b;
-        /* Slate 800 */
-        --text-secondary: #64748b;
-        /* Slate 500 */
-        --card-border: 1px solid #e2e8f0;
-        --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-
-        /* Override Bootstrap Variables */
-        --bs-primary: #0f172a;
-        --bs-primary-rgb: 15, 23, 42;
-        --bs-success: #059669;
-        /* Emerald 600 */
-        --bs-success-rgb: 5, 150, 105;
-        --bs-info: #0891b2;
-        /* Cyan 600 */
-        --bs-info-rgb: 8, 145, 178;
-        --bs-warning: #d97706;
-        /* Amber 600 */
-        --bs-warning-rgb: 217, 119, 6;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(226, 232, 240, 0.8);
     }
 
-    body {
-        background-color: var(--bg-color);
-        color: var(--text-primary);
-    }
-
-    .dashboard-container {
-        padding-bottom: 3rem;
-    }
-
-    /* Stats Icons (Used in Header) */
-
-
-
-    .stats-icon {
-        width: 48px;
-        height: 48px;
-        background-color: #e2e8f0;
-        /* Darker for contrast on transparent */
-        color: var(--primary-color);
-        border-radius: 0.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 0;
-    }
-
-    /* Section Headers */
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 0.5rem;
-    }
-
-    .section-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    /* Enrollments */
-    .enrollment-card {
-        background: var(--surface-color);
-        border: var(--card-border);
-        border-radius: 0.5rem;
+    .welcome-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 24px;
+        padding: 40px;
+        color: white;
+        position: relative;
         overflow: hidden;
-        box-shadow: var(--card-shadow);
+        margin-bottom: 40px;
+    }
+
+    .welcome-banner::after {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: rgba(37, 99, 235, 0.2);
+        border-radius: 50%;
+        filter: blur(50px);
+    }
+
+    .stat-pill {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 15px 25px;
+    }
+
+    /* Course Cards */
+    .course-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         height: 100%;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        transition: border-color 0.2s;
     }
 
-    .enrollment-card:hover {
-        border-color: var(--action-color);
+    .course-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: #2563eb;
     }
 
-    .course-thumb {
-        height: 120px;
-        background-color: var(--primary-color);
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 2.5rem;
-    }
-
-    .status-badge {
+    .course-badge {
         position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        padding: 0.25rem 0.75rem;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        border-radius: 0.25rem;
-        font-weight: 500;
-        font-size: 0.75rem;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+        background: rgba(15, 23, 42, 0.8);
         backdrop-filter: blur(4px);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 
-
-
-    /* Course List (Right Side) */
-    .mini-course-item {
-        display: flex;
-        gap: 1rem;
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-        transition: background-color 0.2s;
-        text-decoration: none;
-        color: inherit;
+    .img-container {
+        height: 160px;
+        position: relative;
+        background: #f1f5f9;
     }
 
-    .mini-course-item:last-child {
-        border-bottom: none;
+    .img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .mini-course-item:hover {
-        background-color: #f8fafc;
+    .btn-join {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 12px 20px;
+        margin-top: auto;
+        /* Pushes button to bottom */
     }
 
-    .mini-course-icon {
-        width: 40px;
-        height: 40px;
-        background: #e2e8f0;
-        color: var(--text-secondary);
-        border-radius: 0.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .upcoming-widget {
+        background: white;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        padding: 20px;
     }
 </style>
 
 <div class="dashboard-container">
-    <!-- Unifed Dashboard Header -->
-    <div class="dashboard-header mb-5">
-        <div class="row g-4 align-items-center">
-            <!-- Profile Section -->
-            <div class="col-lg-4 d-flex align-items-center gap-3">
-                <div class="position-relative">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                        style="width: 64px; height: 64px; font-size: 1.5rem; font-weight: bold;">
+    <div class="welcome-banner">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow"
+                        style="width: 70px; height: 70px; font-size: 1.8rem; font-weight: bold;">
                         {{ user.username|first|upper }}
                     </div>
-                    <span
-                        class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
-                </div>
-                <div>
-                    <h4 class="fw-bold mb-0">{{ user.username }}</h4>
-                    <div class="d-flex align-items-center gap-2 text-muted small">
-                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">Student</span>
-                        <span>•</span>
-                        <span>{{ now|date:"l, F jS" }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Section (Divider on large screens) -->
-            <div class="col-lg-3 border-start-lg border-end-lg px-lg-4">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="stats-icon bg-primary bg-opacity-10 text-primary rounded-circle"
-                        style="width: 50px; height: 50px;">
-                        <i class="bi bi-journal-bookmark-fill fs-4"></i>
-                    </div>
                     <div>
-                        <h2 class="fw-bold mb-0" id="stats-enrolled">0</h2>
-                        <p class="text-muted small mb-0">Courses Enrolled</p>
+                        <h2 class="fw-bold mb-0">Welcome back, {{ user.username }}!</h2>
+                        <p class="text-white-50 mb-0">Ready to continue your learning journey today?</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Upcoming Class Section -->
             <div class="col-lg-5">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-calendar-event me-2"></i>Upcoming Class</h6>
-                    <a href="#" class="text-muted small text-decoration-none">View Calendar <i
-                            class="bi bi-chevron-right"></i></a>
-                </div>
-                <!-- Mini Widget for Next Class -->
-                <div id="upcoming-classes-header-widget" class="bg-white rounded-3 border p-2">
-                    <div class="d-flex align-items-center justify-content-center text-muted small py-2">
-                        <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-pill">
+                            <small class="d-block text-white-50">Enrolled</small>
+                            <span class="h4 fw-bold mb-0" id="stats-enrolled">0</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-pill">
+                            <small class="d-block text-white-50">Completed</small>
+                            <span class="h4 fw-bold mb-0">0</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Grid -->
     <div class="row g-4">
-        <div class="col-12">
-            <!-- My Enrollments -->
-            <div class="section-header">
-                <div class="section-title">
-                    <i class="bi bi-mortarboard-fill text-primary"></i> My Learning
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0"><i class="bi bi-book-half me-2 text-primary"></i>My Courses</h4>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary rounded-start-pill px-3 active">Active</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-end-pill px-3">Archive</button>
                 </div>
-                <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">View All</a>
             </div>
 
-            <div id="enrollments-grid" class="row g-4 mb-5">
-                <!-- Loading State -->
+            <div id="enrollments-grid" class="row g-4">
                 <div class="col-12 text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                 </div>
             </div>
+        </div>
 
+        <div class="col-lg-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Next Up</h5>
+            <div id="upcoming-classes-header-widget" class="upcoming-widget mb-4">
+            </div>
 
+            <div class="card border-0 bg-light-subtle rounded-4 p-4 shadow-sm">
+                <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Learning Tip</h6>
+                <p class="small text-muted mb-0">Consistent study of 15 minutes a day increases retention by 40%. Keep
+                    it up!</p>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetchData();
-    });
+    document.addEventListener('DOMContentLoaded', fetchData);
 
     async function fetchData() {
         try {
-            const [coursesRes, enrollmentsRes] = await Promise.all([
-                fetch('/api/courses/'),
-                fetch('/api/enrollments/')
-            ]);
-
-            const courses = await coursesRes.json();
+            const enrollmentsRes = await fetch('/api/enrollments/');
             const enrollments = await enrollmentsRes.json();
-
-            updateDashboard(courses, enrollments);
+            updateDashboard(enrollments);
         } catch (error) {
             console.error('Error loading dashboard:', error);
         }
     }
 
-    function updateDashboard(courses, enrollments) {
-        // Update Stats
-        document.getElementById('stats-enrolled').textContent = enrollments.length;
+    function updateDashboard(enrollments) {
+        // Update counters
         document.getElementById('stats-enrolled').textContent = enrollments.length;
 
-        // 1. Render Enrollments (Main Grid)
-        const enrollmentsGrid = document.getElementById('enrollments-grid');
-        enrollmentsGrid.innerHTML = '';
+        const grid = document.getElementById('enrollments-grid');
+        grid.innerHTML = '';
 
         if (enrollments.length === 0) {
-            enrollmentsGrid.innerHTML = `
-                <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
-                    <i class="bi bi-journal-plus fs-1 text-muted mb-3 d-block"></i>
-                    <h5>No courses yet</h5>
-                    <p class="text-muted">Explore our catalog to start learning</p>
-                </div>
-            `;
-        } else {
-            enrollments.forEach(item => {
-                const meetBtn = item.meet_link ?
-                    `<a href="${item.meet_link}" target="_blank" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-camera-video me-1"></i> Join</a>` :
-                    `<button disabled class="btn btn-light btn-sm rounded-pill px-3 text-muted"><i class="bi bi-clock me-1"></i> No Link</button>`;
-
-                const imageHtml = item.course_photo ?
-                    `<img src="${item.course_photo}" alt="${item.course_title}" style="width: 100%; height: 100%; object-fit: cover;">` :
-                    `<i class="bi bi-code-square"></i><span class="status-badge">In Progress</span>`;
-
-                const html = `
-                <div class="col-md-6">
-                    <div class="enrollment-card">
-                        <div class="course-thumb">
-                            ${imageHtml}
-                            ${item.course_photo ? '<span class="status-badge">In Progress</span>' : ''}
-                        </div>
-                        <div class="p-4 flex-grow-1 d-flex flex-column">
-                            <h5 class="fw-bold mb-1">${item.course_title}</h5>
-                            <p class="text-muted small mb-3">
-                                <i class="bi bi-person-circle me-1"></i> ${item.teacher_name}
-                            </p>
-                            
-                            <div class="class-info bg-light rounded p-2 mb-3 small">
-                                ${item.class_description ?
-                        `<i class="bi bi-info-circle me-1 text-primary"></i> ${item.class_description}` :
-                        '<span class="text-muted fst-italic">No class info available</span>'}
-                            </div>
-
-                            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                                ${meetBtn}
-                                <small class="text-muted fw-bold">In Progress</small>
-                            </div>
-                        </div>
+            grid.innerHTML = `
+                <div class="col-12">
+                    <div class="text-center py-5 bg-white rounded-4 border">
+                        <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" style="width: 80px; opacity: 0.5" class="mb-3">
+                        <h5>No courses found</h5>
+                        <a href="/courses/" class="btn btn-primary mt-2 px-4 rounded-pill">Explore Catalog</a>
                     </div>
-                </div>
-                `;
-                enrollmentsGrid.insertAdjacentHTML('beforeend', html);
-            });
+                </div>`;
+            return;
         }
 
+        enrollments.forEach(item => {
+            const imageHtml = item.course_photo ?
+                `<img src="${item.course_photo}" alt="${item.course_title}">` :
+                `<div class="h-100 d-flex align-items-center justify-content-center bg-dark-subtle text-muted fs-1"><i class="bi bi-image"></i></div>`;
 
+            const meetBtn = item.meet_link ?
+                `<a href="${item.meet_link}" target="_blank" class="btn btn-primary btn-join w-100"><i class="bi bi-camera-video me-2"></i>Join Live Class</a>` :
+                `<button disabled class="btn btn-light btn-join w-100 text-muted">No Live Session</button>`;
 
-        // 3. Render Upcoming Classes Widget (Header)
-        const upcomingWidget = document.getElementById('upcoming-classes-header-widget');
-        const upcoming = enrollments.filter(e => e.meet_link).slice(0, 1); // Show next one
-
-        if (upcoming.length > 0) {
-            const item = upcoming[0];
-            // Mock date for demo purposes since API might not have date
-            const today = new Date();
-
-            upcomingWidget.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded p-2 text-center" style="min-width: 50px;">
-                            <span class="d-block fw-bold h5 mb-0">${today.getDate()}</span>
-                            <span class="d-block small text-uppercase" style="font-size: 0.7rem;">${today.toLocaleString('default', { month: 'short' })}</span>
+            const html = `
+                <div class="col-md-6">
+                    <div class="course-card">
+                        <div class="img-container">
+                            <span class="course-badge">Active</span>
+                            ${imageHtml}
                         </div>
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark text-truncate" style="max-width: 180px;">${item.course_title}</h6>
-                            <small class="text-danger fw-bold"><i class="bi bi-circle-fill" style="font-size: 6px; vertical-align: middle;"></i> Live Class</small>
+                        <div class="p-4 d-flex flex-column flex-grow-1">
+                            <div class="text-primary small fw-bold text-uppercase mb-1">In Progress</div>
+                            
+                            <!-- Link to Course Content -->
+                            <a href="/dashboard/student/course/${item.course_id}/" class="text-decoration-none text-dark">
+                                <h5 class="fw-bold mb-2 hover-primary">${item.course_title}</h5>
+                            </a>
+
+                            ${item.teacher_name && item.teacher_name !== 'Unknown Teacher' ? `
+                            <div class="d-flex align-items-center gap-2 mb-4">
+                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:24px; height:24px; font-size:0.7rem; font-weight: bold;">
+                                    ${item.teacher_name.charAt(0).toUpperCase()}
+                                </div>
+                                <span class="small text-muted">${item.teacher_name}</span>
+                            </div>
+                            ` : '<div class="mb-4"></div>'}
+                            
+                            <div class="d-grid gap-2 mt-auto">
+                                ${meetBtn}
+                                <a href="/dashboard/student/course/${item.course_id}/content/" class="btn btn-outline-primary btn-join w-100">
+                                    <i class="bi bi-collection-play me-2"></i>View Content
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <a href="${item.meet_link}" target="_blank" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold">
-                        Join Now
-                    </a>
+                </div>`;
+            grid.insertAdjacentHTML('beforeend', html);
+        });
+
+        // Update Sidebar Widget
+        const upcomingContainer = document.getElementById('upcoming-classes-header-widget');
+        const live = enrollments.find(e => e.meet_link);
+
+        if (live) {
+            upcomingContainer.innerHTML = `
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 text-center" style="width: 60px;">
+                        <span class="d-block fw-bold h5 mb-0">${new Date().getDate()}</span>
+                        <span class="d-block small text-uppercase">NOW</span>
+                    </div>
+                    <div class="overflow-hidden">
+                            <h6 class="fw-bold text-dark mb-0 text-truncate">${live.course_title}</h6>
+                            ${live.teacher_name && live.teacher_name !== 'Unknown Teacher' ? `<small class="text-muted">Live with ${live.teacher_name}</small>` : ''}
+                        </div>
                 </div>
+                <a href="${live.meet_link}" target="_blank" class="btn btn-dark w-100 rounded-3 py-2 fw-bold">Enter Room</a>
             `;
         } else {
-            upcomingWidget.innerHTML = `
-                <div class="d-flex align-items-center justify-content-center text-muted small py-2">
-                    <i class="bi bi-calendar-check me-2"></i> No upcoming classes right now
-                </div>
-            `;
+            upcomingContainer.innerHTML = `<p class="text-muted small text-center mb-0 py-3">No classes scheduled for today.</p>`;
         }
     }
 </script>

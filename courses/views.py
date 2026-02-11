@@ -2,87 +2,135 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
-from .models import Course, CourseOffering, CustomUser, Enrollment
-from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm
+from .models import Course, CourseOffering, CustomUser, Enrollment, CourseContent
+from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm, CourseContentForm
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.core.mail import EmailMessage
 from .tokens import account_activation_token
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from .brevo_email import send_brevo_email
 
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST) 
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = True  # Activate immediately (no email verification)
+            user.is_active = False  # Require OTP verification
+            
+            # Generate 6-digit OTP
+            import random
+            from django.utils import timezone
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
+            user.otp_created_at = timezone.now()
             user.save()
             
-            # Log the user in immediately
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome to the platform.')
-            return redirect('dashboard')
+            # Send OTP email using Brevo API
+            context = {
+                'username': user.username,
+                'otp': otp,
+            }
+            html_message = render_to_string('emails/otp_verification.html', context)
+            
+            # Send email
+            result = send_brevo_email(
+                to_email=user.email,
+                subject='Verify Your Email - Learning Platform',
+                html_content=html_message
+            )
+            
+            if result['success']:
+                # Store user ID in session for OTP verification
+                request.session['pending_user_id'] = user.id
+                messages.success(request, f'Registration successful! Please check your email ({user.email}) for the OTP code.')
+                return redirect('verify_otp')
+            else:
+                # If email fails, delete the user and show error
+                user.delete()
+                messages.error(request, f'Failed to send verification email: {result["message"]}')
+                return redirect('register')
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 
-# DISABLED: OTP verification (no longer using email verification)
-# def verify_otp(request):
-#     if request.method == 'POST':
-#         otp_entered = request.POST.get('otp', '').strip()
-#         user_id = request.session.get('pending_user_id')
-#         
-#         if not user_id:
-#             messages.error(request, 'Session expired. Please register again.')
-#             return redirect('register')
-#         
-#         User = get_user_model()
-#         try:
-#             user = User.objects.get(pk=user_id)
-#         except User.DoesNotExist:
-#             messages.error(request, 'Invalid session. Please register again.')
-#             return redirect('register')
-#         
-#         # Check if OTP matches
-#         if user.otp != otp_entered:
-#             messages.error(request, 'Invalid OTP code. Please try again.')
-#             return render(request, 'registration/verify_otp.html')
-#         
-#         # Check if OTP has expired (10 minutes)
-#         from django.utils import timezone
-#         from datetime import timedelta
-#         if user.otp_created_at:
-#             # Make sure both datetimes are timezone-aware for comparison
-#             otp_created = user.otp_created_at
-#             if timezone.is_naive(otp_created):
-#                 otp_created = timezone.make_aware(otp_created)
-#             
-#             expiry_time = otp_created + timedelta(minutes=10)
-#             if timezone.now() > expiry_time:
-#                 messages.error(request, 'OTP has expired. Please register again.')
-#                 user.delete()  # Clean up expired registration
-#                 return redirect('register')
-#         
-#         # OTP is valid - activate user
-#         user.is_active = True
-#         user.otp = None  # Clear OTP
-#         user.otp_created_at = None
-#         user.save()
-#         
-#         # Clear session
-#         if 'pending_user_id' in request.session:
-#             del request.session['pending_user_id']
-#         
-#         # Log the user in
-#         login(request, user)
-#         messages.success(request, 'Your account has been verified successfully!')
-#         return redirect('dashboard')
-#     
-#     return render(request, 'registration/verify_otp.html')
+
+def verify_otp(request):
+    if request.method == 'POST':
+        otp_entered = request.POST.get('otp', '').strip()
+        user_id = request.session.get('pending_user_id')
+        
+        if not user_id:
+            messages.error(request, 'Session expired. Please register again.')
+            return redirect('register')
+        
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            messages.error(request, 'Invalid session. Please register again.')
+            return redirect('register')
+        
+        # Check if OTP matches
+        if user.otp != otp_entered:
+            messages.error(request, 'Invalid OTP code. Please try again.')
+            return render(request, 'registration/verify_otp.html')
+        
+        # Check if OTP has expired (10 minutes)
+        from django.utils import timezone
+        from datetime import timedelta
+        if user.otp_created_at:
+            # Make sure both datetimes are timezone-aware for comparison
+            otp_created = user.otp_created_at
+            if timezone.is_naive(otp_created):
+                otp_created = timezone.make_aware(otp_created)
+            
+            expiry_time = otp_created + timedelta(minutes=10)
+            if timezone.now() > expiry_time:
+                messages.error(request, 'OTP has expired. Please register again.')
+                user.delete()  # Clean up expired registration
+                return redirect('register')
+        
+        # OTP is valid - activate user
+        user.is_active = True
+        user.otp = None  # Clear OTP
+        user.otp_created_at = None
+        user.save()
+        
+        # Send welcome email using Brevo API
+        context = {
+            'username': user.username,
+            'role': user.role,
+            'dashboard_url': request.build_absolute_uri('/dashboard/'),
+        }
+        html_message = render_to_string('emails/welcome.html', context)
+        
+        try:
+            result = send_brevo_email(
+                to_email=user.email,
+                subject='Welcome to Learning Platform!',
+                html_content=html_message
+            )
+            if not result['success']:
+                print(f"Failed to send welcome email: {result['message']}")
+        except Exception as e:
+            print(f"Failed to send welcome email: {e}")
+        
+        # Clear session
+        if 'pending_user_id' in request.session:
+            del request.session['pending_user_id']
+        
+        # Log the user in
+        login(request, user)
+        messages.success(request, 'Your account has been verified successfully! Welcome to Learning Platform.')
+        return redirect('dashboard')
+    
+    return render(request, 'registration/verify_otp.html')
+
 
 
 
@@ -118,6 +166,10 @@ def admin_dashboard(request):
 def teacher_dashboard(request):
     if request.user.role != 'teacher':
         return redirect('dashboard')
+    
+    # Get all offerings for this teacher
+    offerings = CourseOffering.objects.filter(teacher=request.user)
+    
     if request.method == 'POST':
         if 'opt_in' in request.POST:
             course_id = request.POST.get('course_id')
@@ -125,15 +177,38 @@ def teacher_dashboard(request):
             CourseOffering.objects.create(teacher=request.user, course=course)
             messages.success(request, f'You are now teaching {course.title}!')
             return redirect('teacher_dashboard')
+            
         elif 'update_details' in request.POST:
             offering_id = request.POST.get('offering_id')
-            offering = CourseOffering.objects.get(id=offering_id, teacher=request.user)
+            offering = get_object_or_404(CourseOffering, id=offering_id, teacher=request.user)
             offering.meet_link = request.POST.get('meet_link')
             offering.class_description = request.POST.get('class_description')
             offering.save()
             messages.success(request, 'Class details updated!')
             return redirect('teacher_dashboard')
-    return render(request, 'dashboard/teacher_dashboard.html')
+            
+        elif 'add_content' in request.POST:
+            offering_id = request.POST.get('offering_id')
+            offering = get_object_or_404(CourseOffering, id=offering_id, teacher=request.user)
+            
+            form = CourseContentForm(request.POST, request.FILES)
+            if form.is_valid():
+                content = form.save(commit=False)
+                content.course_offering = offering
+                content.save()
+                messages.success(request, 'Content added successfully!')
+            else:
+                messages.error(request, 'Error adding content. Please check the form.')
+            return redirect('teacher_dashboard')
+            
+        elif 'delete_content' in request.POST:
+            content_id = request.POST.get('content_id')
+            content = get_object_or_404(CourseContent, id=content_id, course_offering__teacher=request.user)
+            content.delete()
+            messages.success(request, 'Content deleted successfully!')
+            return redirect('teacher_dashboard')
+
+    return render(request, 'dashboard/teacher_dashboard.html', {'offerings': offerings})
 
 @login_required
 def student_dashboard(request):
@@ -158,6 +233,15 @@ def student_course_detail(request, course_id):
         course=course,
         status='success'
     ).exists()
+
+    # Check if user is enrolled in ANY offering of this course
+    is_enrolled = Enrollment.objects.filter(
+        student=request.user,
+        course_offering__course=course
+    ).exists()
+    
+    # Grant access if paid OR enrolled
+    has_access = has_paid or is_enrolled
     
     if request.method == 'POST':
         offering_id = request.POST.get('offering_id')
@@ -197,7 +281,35 @@ def student_course_detail(request, course_id):
     return render(request, 'dashboard/student_course_detail.html', {
         'course': course,
         'offerings': offerings,
-        'has_paid': has_paid
+        'has_paid': has_paid,
+        'is_enrolled': is_enrolled,
+        'has_access': has_access
+    })
+
+@login_required
+def course_content_view(request, course_id):
+    if request.user.role != 'student':
+        return redirect('dashboard')
+        
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check access (Paid OR Enrolled)
+    has_paid = Payment.objects.filter(student=request.user, course=course, status='success').exists()
+    is_enrolled = Enrollment.objects.filter(student=request.user, course_offering__course=course).exists()
+    
+    if not (has_paid or is_enrolled):
+        messages.error(request, 'You need to enroll in this course to view content.')
+        return redirect('student_course_detail', course_id=course.id)
+    
+    offerings = CourseOffering.objects.filter(course=course).prefetch_related('contents')
+    
+    # Calculate total content count
+    contents_count = sum(offering.contents.count() for offering in offerings)
+    
+    return render(request, 'dashboard/course_content.html', {
+        'course': course,
+        'offerings': offerings,
+        'contents_count': contents_count
     })
 
 @login_required

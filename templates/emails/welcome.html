@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Learning Platform</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .content {
+            padding: 30px;
+            color: #333;
+        }
+
+        .welcome-icon {
+            text-align: center;
+            font-size: 60px;
+            margin: 20px 0;
+        }
+
+        .feature-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .feature-item:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .cta-button {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎉 Welcome to Learning Platform!</h1>
+        </div>
+
+        <div class="content">
+            <div class="welcome-icon">👋</div>
+
+            <p>Hi <strong>{{ username }}</strong>,</p>
+
+            <p>Congratulations! Your account has been successfully verified and activated. Welcome to the Learning
+                Platform community!</p>
+
+            <div class="feature-box">
+                <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
+
+                {% if role == 'student' %}
+                <div class="feature-item">Browse and enroll in available courses</div>
+                <div class="feature-item">Access course materials and resources</div>
+                <div class="feature-item">Track your learning progress</div>
+                <div class="feature-item">Connect with teachers and classmates</div>
+                {% elif role == 'teacher' %}
+                <div class="feature-item">Create and manage your courses</div>
+                <div class="feature-item">Opt-in to teach available courses</div>
+                <div class="feature-item">Share class materials and resources</div>
+                <div class="feature-item">Manage student enrollments</div>
+                {% else %}
+                <div class="feature-item">Explore the platform features</div>
+                <div class="feature-item">Access your personalized dashboard</div>
+                <div class="feature-item">Manage your account settings</div>
+                {% endif %}
+            </div>
+
+            <div class="cta-button">
+                <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>
+            </div>
+
+            <p style="margin-top: 30px;">If you have any questions or need assistance, feel free to reach out to our
+                support team.</p>
+
+            <p>Happy learning!</p>
+            <p><strong>The Learning Platform Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>You're receiving this email because you created an account on Learning Platform.</p>
+            <p>© 2026 Learning Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

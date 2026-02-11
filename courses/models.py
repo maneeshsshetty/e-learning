@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from cloudinary_storage.storage import VideoMediaCloudinaryStorage, RawMediaCloudinaryStorage
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -94,3 +95,33 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student.username} enrolled in {self.course_offering}"
+
+class CourseContent(models.Model):
+    course_offering = models.ForeignKey(CourseOffering, on_delete=models.CASCADE, related_name='contents')
+    title = models.CharField(max_length=200)
+    
+    # Video Content (Cloudinary Video Storage)
+    video = models.FileField(
+        upload_to='course_videos/', 
+        blank=True, 
+        null=True,
+        storage=VideoMediaCloudinaryStorage(),
+        help_text="Upload course video"
+    )
+    
+    # File/Document Content (Cloudinary Raw Storage)
+    file = models.FileField(
+        upload_to='course_files/', 
+        blank=True, 
+        null=True,
+        storage=RawMediaCloudinaryStorage(),
+        help_text="Upload PDF or resource file"
+    )
+    
+    # External Link (e.g., Meet, Zoom, Docs)
+    link = models.URLField(blank=True, null=True, help_text="External link (e.g., Google Meet)")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.course_offering.course.title})"
