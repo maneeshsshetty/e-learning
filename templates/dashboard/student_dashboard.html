@@ -3,40 +3,62 @@
 {% block title %}My Learning Dashboard{% endblock %}
 
 {% block content %}
+<!-- Close the container from base.html to allow full-width hero -->
+</div>
+
 <style>
     :root {
-        --glass-bg: rgba(255, 255, 255, 0.7);
-        --glass-border: rgba(226, 232, 240, 0.8);
+        --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --card-bg: #ffffff;
+        --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
     }
 
-    .welcome-banner {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        border-radius: 24px;
-        padding: 40px;
+    /* Remove default padding to allow hero to touch navbar */
+    body {
+        padding-top: 0 !important;
+    }
+
+    .main-content {
+        padding-top: 0 !important;
+    }
+
+    /* Hero Section matching Available Courses */
+    .dashboard-hero {
+        background: var(--primary-gradient);
         color: white;
+        padding: 5rem 0 5rem;
+        border-radius: 0 0 24px 24px;
+        margin-bottom: 3rem;
         position: relative;
-        overflow: hidden;
-        margin-bottom: 40px;
+        z-index: 10;
+        box-shadow: var(--shadow-md);
     }
 
-    .welcome-banner::after {
+    .dashboard-hero::after {
         content: '';
         position: absolute;
         top: -50px;
         right: -50px;
-        width: 200px;
-        height: 200px;
-        background: rgba(37, 99, 235, 0.2);
+        width: 300px;
+        height: 300px;
+        background: rgba(37, 99, 235, 0.15);
         border-radius: 50%;
-        filter: blur(50px);
+        filter: blur(60px);
+        pointer-events: none;
     }
 
     .stat-pill {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 16px;
         padding: 15px 25px;
+        transition: transform 0.2s;
+    }
+
+    .stat-pill:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
     }
 
     /* Course Cards */
@@ -52,7 +74,7 @@
     }
 
     .course-card:hover {
-        transform: translateY(-8px);
+        transform: translateY(-5px);
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         border-color: #2563eb;
     }
@@ -62,17 +84,18 @@
         top: 15px;
         right: 15px;
         z-index: 10;
-        background: rgba(15, 23, 42, 0.8);
+        background: rgba(15, 23, 42, 0.9);
         backdrop-filter: blur(4px);
         color: white;
         padding: 5px 12px;
         border-radius: 8px;
         font-size: 0.75rem;
         font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .img-container {
-        height: 160px;
+        height: 180px;
         position: relative;
         background: #f1f5f9;
     }
@@ -83,55 +106,56 @@
         object-fit: cover;
     }
 
-    .btn-join {
-        border-radius: 12px;
-        font-weight: 600;
-        padding: 12px 20px;
-        margin-top: auto;
-        /* Pushes button to bottom */
-    }
-
     .upcoming-widget {
         background: white;
         border-radius: 18px;
         border: 1px solid #e2e8f0;
-        padding: 20px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 </style>
 
-<div class="dashboard-container">
-    <div class="welcome-banner">
-        <div class="row align-items-center">
+<!-- Full Width Hero -->
+<div class="dashboard-hero">
+    <div class="container">
+        <div class="row align-items-center position-relative z-1">
             <div class="col-lg-7">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow"
-                        style="width: 70px; height: 70px; font-size: 1.8rem; font-weight: bold;">
+                <div class="d-flex align-items-center gap-4 mb-3 mb-lg-0">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center border border-4 border-white border-opacity-25 shadow-lg"
+                        style="width: 80px; height: 80px; font-size: 2rem; font-weight: 700;">
                         {{ user.username|first|upper }}
                     </div>
                     <div>
-                        <h2 class="fw-bold mb-0">Welcome back, {{ user.username }}!</h2>
-                        <p class="text-white-50 mb-0">Ready to continue your learning journey today?</p>
+                        <h1 class="display-6 fw-bold mb-1">Welcome back, {{ user.username }}!</h1>
+                        <p class="text-white opacity-75 mb-0 fs-5">Ready to continue your learning journey today?</p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-5">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="stat-pill">
-                            <small class="d-block text-white-50">Enrolled</small>
-                            <span class="h4 fw-bold mb-0" id="stats-enrolled">0</span>
+                <div class="row g-3 justify-content-lg-end">
+                    <div class="col-6 col-sm-5">
+                        <div class="stat-pill text-center text-lg-start">
+                            <small class="d-block text-white opacity-75 text-uppercase fw-bold"
+                                style="font-size: 0.7rem; letter-spacing: 1px;">Enrolled</small>
+                            <span class="display-6 fw-bold mb-0" id="stats-enrolled">0</span>
+                            <span class="fs-6 opacity-75">Courses</span>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="stat-pill">
-                            <small class="d-block text-white-50">Completed</small>
-                            <span class="h4 fw-bold mb-0">0</span>
+                    <div class="col-6 col-sm-5">
+                        <div class="stat-pill text-center text-lg-start">
+                            <small class="d-block text-white opacity-75 text-uppercase fw-bold"
+                                style="font-size: 0.7rem; letter-spacing: 1px;">Completed</small>
+                            <span class="display-6 fw-bold mb-0">0</span>
+                            <span class="fs-6 opacity-75">Courses</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<div class="container pb-5">
 
     <div class="row g-4">
         <div class="col-lg-8">
@@ -162,30 +186,30 @@
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', fetchData);
 
-    async function fetchData() {
-        try {
-            const enrollmentsRes = await fetch('/api/enrollments/');
-            const enrollments = await enrollmentsRes.json();
-            updateDashboard(enrollments);
-        } catch (error) {
-            console.error('Error loading dashboard:', error);
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchData);
+
+        async function fetchData() {
+            try {
+                const enrollmentsRes = await fetch('/api/enrollments/');
+                const enrollments = await enrollmentsRes.json();
+                updateDashboard(enrollments);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
         }
-    }
 
-    function updateDashboard(enrollments) {
-        // Update counters
-        document.getElementById('stats-enrolled').textContent = enrollments.length;
+        function updateDashboard(enrollments) {
+            // Update counters
+            document.getElementById('stats-enrolled').textContent = enrollments.length;
 
-        const grid = document.getElementById('enrollments-grid');
-        grid.innerHTML = '';
+            const grid = document.getElementById('enrollments-grid');
+            grid.innerHTML = '';
 
-        if (enrollments.length === 0) {
-            grid.innerHTML = `
+            if (enrollments.length === 0) {
+                grid.innerHTML = `
                 <div class="col-12">
                     <div class="text-center py-5 bg-white rounded-4 border">
                         <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" style="width: 80px; opacity: 0.5" class="mb-3">
@@ -193,19 +217,19 @@
                         <a href="/courses/" class="btn btn-primary mt-2 px-4 rounded-pill">Explore Catalog</a>
                     </div>
                 </div>`;
-            return;
-        }
+                return;
+            }
 
-        enrollments.forEach(item => {
-            const imageHtml = item.course_photo ?
-                `<img src="${item.course_photo}" alt="${item.course_title}">` :
-                `<div class="h-100 d-flex align-items-center justify-content-center bg-dark-subtle text-muted fs-1"><i class="bi bi-image"></i></div>`;
+            enrollments.forEach(item => {
+                const imageHtml = item.course_photo ?
+                    `<img src="${item.course_photo}" alt="${item.course_title}">` :
+                    `<div class="h-100 d-flex align-items-center justify-content-center bg-dark-subtle text-muted fs-1"><i class="bi bi-image"></i></div>`;
 
-            const meetBtn = item.meet_link ?
-                `<a href="${item.meet_link}" target="_blank" class="btn btn-primary btn-join w-100"><i class="bi bi-camera-video me-2"></i>Join Live Class</a>` :
-                `<button disabled class="btn btn-light btn-join w-100 text-muted">No Live Session</button>`;
+                const meetBtn = item.meet_link ?
+                    `<a href="${item.meet_link}" target="_blank" class="btn btn-primary btn-join w-100"><i class="bi bi-camera-video me-2"></i>Join Live Class</a>` :
+                    `<button disabled class="btn btn-light btn-join w-100 text-muted">No Live Session</button>`;
 
-            const html = `
+                const html = `
                 <div class="col-md-6">
                     <div class="course-card">
                         <div class="img-container">
@@ -238,15 +262,15 @@
                         </div>
                     </div>
                 </div>`;
-            grid.insertAdjacentHTML('beforeend', html);
-        });
+                grid.insertAdjacentHTML('beforeend', html);
+            });
 
-        // Update Sidebar Widget
-        const upcomingContainer = document.getElementById('upcoming-classes-header-widget');
-        const live = enrollments.find(e => e.meet_link);
+            // Update Sidebar Widget
+            const upcomingContainer = document.getElementById('upcoming-classes-header-widget');
+            const live = enrollments.find(e => e.meet_link);
 
-        if (live) {
-            upcomingContainer.innerHTML = `
+            if (live) {
+                upcomingContainer.innerHTML = `
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2 text-center" style="width: 60px;">
                         <span class="d-block fw-bold h5 mb-0">${new Date().getDate()}</span>
@@ -259,9 +283,9 @@
                 </div>
                 <a href="${live.meet_link}" target="_blank" class="btn btn-dark w-100 rounded-3 py-2 fw-bold">Enter Room</a>
             `;
-        } else {
-            upcomingContainer.innerHTML = `<p class="text-muted small text-center mb-0 py-3">No classes scheduled for today.</p>`;
+            } else {
+                upcomingContainer.innerHTML = `<p class="text-muted small text-center mb-0 py-3">No classes scheduled for today.</p>`;
+            }
         }
-    }
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}
