@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3>Manage Quiz: {{ quiz.title }}</h3>
+                <div>
+                    <span class="badge bg-info">Pass Mark: {{ quiz.pass_percentage }}%</span>
+                    <a href="{% url 'delete_quiz' quiz.id %}" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Delete this quiz?');">Delete Quiz</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">{{ quiz.description }}</p>
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Questions</h4>
+                    <a href="{% url 'add_question' quiz.id %}" class="btn btn-success"><i class="bi bi-plus"></i> Add
+                        Question</a>
+                </div>
+
+                {% if quiz.questions.all %}
+                <div class="accordion" id="questionsAccordion">
+                    {% for question in quiz.questions.all %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ question.id }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ question.id }}">
+                                Q{{ question.order }}: {{ question.text|truncatechars:50 }}
+                            </button>
+                        </h2>
+                        <div id="collapse{{ question.id }}"
+                            class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                            data-bs-parent="#questionsAccordion">
+                            <div class="accordion-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <p class="mb-0">{{ question.text }}</p>
+                                    <div>
+                                        <a href="{% url 'delete_question' question.id %}"
+                                            class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Delete this question?');">Delete</a>
+                                    </div>
+                                </div>
+
+                                <h6 class="mt-3">Choices:</h6>
+                                <ul class="list-group">
+                                    {% for choice in question.choices.all %}
+                                    <li
+                                        class="list-group-item d-flex justify-content-between align-items-center {% if choice.is_correct %}list-group-item-success{% endif %}">
+                                        {{ choice.text }}
+                                        <div>
+                                            {% if choice.is_correct %}<span
+                                                class="badge bg-success me-2">Correct</span>{% endif %}
+                                            <a href="{% url 'delete_choice' choice.id %}" class="text-danger"
+                                                onclick="return confirm('Delete choice?');"><i
+                                                    class="bi bi-trash"></i></a>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="list-group-item text-muted">No choices added yet.</li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="mt-2">
+                                    <a href="{% url 'add_choice' question.id %}"
+                                        class="btn btn-outline-primary btn-sm">Add Choice</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">No questions added yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">{{ quiz.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ quiz.description }}</p>
+                    <div class="alert alert-info">
+                        <strong>Pass Requirement:</strong> {{ quiz.pass_percentage }}%
+                    </div>
+
+                    <form method="post" action="{% url 'submit_quiz' quiz.id %}">
+                        {% csrf_token %}
+
+                        {% for question in questions %}
+                        <div class="mb-4 p-3 border rounded bg-light">
+                            <h5 class="mb-3">Q{{ forloop.counter }}. {{ question.text }}</h5>
+
+                            <div class="list-group">
+                                {% for choice in question.choices.all %}
+                                <label class="list-group-item col-12 d-flex gap-2">
+                                    <input class="form-check-input flex-shrink-0" type="radio"
+                                        name="question_{{ question.id }}" value="{{ choice.id }}" required>
+                                    <span>{{ choice.text }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p>No questions in this quiz.</p>
+                        {% endfor %}
+
+                        {% if questions %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">Submit Quiz</button>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -88,10 +88,15 @@ class CourseSerializer(serializers.ModelSerializer):
 class CourseOfferingSerializer(serializers.ModelSerializer):
     course_title = serializers.ReadOnlyField(source='course.title')
     teacher_name = serializers.ReadOnlyField(source='teacher.username')
+    quiz_id = serializers.SerializerMethodField()
     
     class Meta:
         model = CourseOffering
-        fields = ['id', 'course', 'course_title', 'teacher', 'teacher_name', 'semester', 'year', 'start_date', 'end_date', 'meet_link', 'class_description']
+        fields = ['id', 'course', 'course_title', 'teacher', 'teacher_name', 'semester', 'year', 'start_date', 'end_date', 'meet_link', 'class_description', 'quiz_id']
+
+    def get_quiz_id(self, obj):
+        quiz = obj.quizzes.first()
+        return quiz.id if quiz else None
 
 class PaymentSerializer(serializers.ModelSerializer):
     course_title = serializers.ReadOnlyField(source='course_offering.course.title')

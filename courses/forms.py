@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import Course, Enrollment, CustomUser, CourseContent, CourseOffering
+from .models import Course, Enrollment, CustomUser, CourseContent, CourseOffering, Quiz, Question, Choice
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -55,4 +55,33 @@ class CourseContentForm(forms.ModelForm):
             'video': forms.FileInput(attrs={'class': 'form-control'}),
             'file': forms.FileInput(attrs={'class': 'form-control'}),
             'link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://meet.google.com/...'}),
+        }
+
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ['title', 'description', 'pass_percentage']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Quiz Title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Quiz Description'}),
+            'pass_percentage': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 100}),
+        }
+
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['text', 'question_type', 'order']
+        widgets = {
+            'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Question Text'}),
+            'question_type': forms.Select(attrs={'class': 'form-select'}),
+            'order': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+class ChoiceForm(forms.ModelForm):
+    class Meta:
+        model = Choice
+        fields = ['text', 'is_correct']
+        widgets = {
+            'text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Choice Text'}),
+            'is_correct': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

@@ -19,4 +19,18 @@ urlpatterns = [
     path('payment/success/<str:transaction_id>/', views.payment_success, name='payment_success'),
     path('payment/paypal/execute/', views.paypal_execute, name='paypal_execute'),
     path('payment/paypal/cancel/', views.paypal_cancel, name='paypal_cancel'),
+
+    # Quiz URLs
+    path('dashboard/teacher/offering/<int:offering_id>/add_quiz/', views.add_quiz, name='add_quiz'),
+    path('dashboard/teacher/quiz/<int:quiz_id>/manage/', views.manage_quiz, name='manage_quiz'),
+    path('dashboard/teacher/quiz/<int:quiz_id>/delete/', views.delete_quiz, name='delete_quiz'),
+    path('dashboard/teacher/quiz/<int:quiz_id>/add_question/', views.add_question, name='add_question'),
+    path('dashboard/teacher/question/<int:question_id>/add_choice/', views.add_choice, name='add_choice'),
+    path('dashboard/teacher/question/<int:question_id>/delete/', views.delete_question, name='delete_question'),
+    path('dashboard/teacher/choice/<int:choice_id>/delete/', views.delete_choice, name='delete_choice'),
+    
+    path('dashboard/student/quiz/<int:quiz_id>/take/', views.take_quiz, name='take_quiz'),
+    path('dashboard/student/quiz/<int:quiz_id>/submit/', views.submit_quiz, name='submit_quiz'),
+    path('dashboard/student/quiz/result/<int:attempt_id>/', views.quiz_result, name='quiz_result'),
+    path('certificate/<str:certificate_id>/download/', views.download_certificate, name='download_certificate'),
 ]

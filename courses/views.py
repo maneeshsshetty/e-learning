@@ -2,8 +2,8 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
-from .models import Course, CourseOffering, CustomUser, Enrollment, CourseContent
-from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm, CourseContentForm
+from .models import Course, CourseOffering, CustomUser, Enrollment, CourseContent, Quiz, Question, Choice, StudentQuizAttempt, Certificate
+from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm, CourseContentForm, QuizForm, QuestionForm, ChoiceForm
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
@@ -301,10 +301,16 @@ def course_content_view(request, course_id):
         messages.error(request, 'You need to enroll in this course to view content.')
         return redirect('student_course_detail', course_id=course.id)
     
-    offerings = CourseOffering.objects.filter(course=course).prefetch_related('contents')
+    offerings = CourseOffering.objects.filter(course=course).prefetch_related('contents', 'quizzes')
     
     # Calculate total content count
     contents_count = sum(offering.contents.count() for offering in offerings)
+
+    # Attach quiz info to offerings
+    for offering in offerings:
+        offering.quiz = offering.quizzes.first()
+        if offering.quiz:
+            offering.attempt = StudentQuizAttempt.objects.filter(student=request.user, quiz=offering.quiz).order_by('-completed_at').first()
     
     return render(request, 'dashboard/course_content.html', {
         'course': course,
@@ -599,3 +605,201 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 course_offering=payment.course_offering,
                 payment=payment
             )
+
+# Quiz Views - Teacher
+
+@login_required
+def add_quiz(request, offering_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+    
+    offering = get_object_or_404(CourseOffering, id=offering_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        form = QuizForm(request.POST)
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.course_offering = offering
+            quiz.save()
+            messages.success(request, 'Quiz created successfully! Now add questions.')
+            return redirect('manage_quiz', quiz_id=quiz.id)
+    else:
+        form = QuizForm()
+    
+    return render(request, 'courses/quiz_form.html', {'form': form, 'offering': offering})
+
+@login_required
+def manage_quiz(request, quiz_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+    
+    quiz = get_object_or_404(Quiz, id=quiz_id, course_offering__teacher=request.user)
+    
+    return render(request, 'courses/manage_quiz.html', {'quiz': quiz})
+
+@login_required
+def delete_quiz(request, quiz_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+        
+    quiz = get_object_or_404(Quiz, id=quiz_id, course_offering__teacher=request.user)
+    offering_id = quiz.course_offering.id
+    quiz.delete()
+    messages.success(request, 'Quiz deleted successfully.')
+    return redirect('teacher_dashboard')
+
+@login_required
+def add_question(request, quiz_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+    
+    quiz = get_object_or_404(Quiz, id=quiz_id, course_offering__teacher=request.user)
+    
+    if request.method == 'POST':
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.quiz = quiz
+            question.save()
+            messages.success(request, 'Question added! Now add choices.')
+            return redirect('manage_quiz', quiz_id=quiz.id)
+    else:
+        form = QuestionForm()
+    
+    return render(request, 'courses/question_form.html', {'form': form, 'quiz': quiz})
+
+@login_required
+def add_choice(request, question_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+    
+    question = get_object_or_404(Question, id=question_id, quiz__course_offering__teacher=request.user)
+    
+    if request.method == 'POST':
+        form = ChoiceForm(request.POST)
+        if form.is_valid():
+            choice = form.save(commit=False)
+            choice.question = question
+            choice.save()
+            messages.success(request, 'Choice added!')
+            return redirect('manage_quiz', quiz_id=question.quiz.id)
+    else:
+        form = ChoiceForm()
+    
+
+
+    return render(request, 'courses/choice_form.html', {'form': form, 'question': question})
+
+@login_required
+def delete_question(request, question_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+
+    question = get_object_or_404(Question, id=question_id, quiz__course_offering__teacher=request.user)
+    quiz_id = question.quiz.id
+    question.delete()
+    messages.success(request, 'Question deleted.')
+    return redirect('manage_quiz', quiz_id=quiz_id)
+
+@login_required
+def delete_choice(request, choice_id):
+    if request.user.role != 'teacher':
+        return redirect('dashboard')
+
+    choice = get_object_or_404(Choice, id=choice_id, question__quiz__course_offering__teacher=request.user)
+    quiz_id = choice.question.quiz.id
+    choice.delete()
+    messages.success(request, 'Choice deleted.')
+    return redirect('manage_quiz', quiz_id=quiz_id)
+
+# Quiz Views - Student
+
+@login_required
+def take_quiz(request, quiz_id):
+    if request.user.role != 'student':
+        return redirect('dashboard')
+    
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+    # Check enrollment
+    is_enrolled = Enrollment.objects.filter(student=request.user, course_offering=quiz.course_offering).exists()
+    if not is_enrolled:
+        messages.error(request, 'You need to be enrolled to take this quiz.')
+        return redirect('student_dashboard')
+
+    questions = quiz.questions.all()
+    
+    return render(request, 'courses/take_quiz.html', {'quiz': quiz, 'questions': questions})
+
+@login_required
+def submit_quiz(request, quiz_id):
+    if request.user.role != 'student':
+        return redirect('dashboard')
+    
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    questions = quiz.questions.all()
+    total_questions = questions.count()
+    correct_answers = 0
+    
+    if request.method == 'POST':
+        for question in questions:
+            selected_choice_id = request.POST.get(f'question_{question.id}')
+            if selected_choice_id:
+                choice = Choice.objects.get(id=selected_choice_id)
+                if choice.is_correct:
+                    correct_answers += 1
+        
+        score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        passed = score_percentage >= quiz.pass_percentage
+        
+        # Save attempt
+        attempt = StudentQuizAttempt.objects.create(
+            student=request.user,
+            quiz=quiz,
+            score=score_percentage,
+            passed=passed
+        )
+        
+        # Generate Certificate if passed
+        if passed:
+            if not Certificate.objects.filter(student=request.user, course_offering=quiz.course_offering).exists():
+                Certificate.objects.create(
+                    student=request.user,
+                    course_offering=quiz.course_offering
+                )
+        
+        return redirect('quiz_result', attempt_id=attempt.id)
+    
+    return redirect('take_quiz', quiz_id=quiz.id)
+
+@login_required
+def quiz_result(request, attempt_id):
+    attempt = get_object_or_404(StudentQuizAttempt, id=attempt_id, student=request.user)
+    certificate = None
+    if attempt.passed:
+        certificate = Certificate.objects.filter(student=request.user, course_offering=attempt.quiz.course_offering).first()
+        
+    return render(request, 'courses/quiz_result.html', {'attempt': attempt, 'certificate': certificate})
+
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+
+@login_required
+def download_certificate(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id, student=request.user)
+    
+    template_path = 'courses/certificate_pdf.html'
+    context = {'certificate': certificate}
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="certificate_{certificate.student.username}.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+    
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from cloudinary_storage.storage import VideoMediaCloudinaryStorage, RawMediaCloudinaryStorage
+import uuid
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -125,3 +126,56 @@ class CourseContent(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.course_offering.course.title})"
+
+class Quiz(models.Model):
+    course_offering = models.ForeignKey(CourseOffering, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    pass_percentage = models.FloatField(default=50.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.course_offering}"
+
+class Question(models.Model):
+    QUESTION_TYPES = (
+        ('single_choice', 'Single Choice'),
+    )
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='single_choice')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.quiz.title} - {self.text[:50]}"
+
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text
+
+class StudentQuizAttempt(models.Model):
+    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    score = models.FloatField()
+    passed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.username} - {self.quiz.title} - {self.score}%"
+
+class Certificate(models.Model):
+    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='certificates')
+    course_offering = models.ForeignKey(CourseOffering, on_delete=models.CASCADE, related_name='certificates')
+    issued_at = models.DateTimeField(auto_now_add=True)
+    certificate_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+    file = models.FileField(upload_to='certificates/', blank=True, null=True, storage=RawMediaCloudinaryStorage())
+
+    def __str__(self):
+        return f"Certificate for {self.student.username} - {self.course_offering}"
