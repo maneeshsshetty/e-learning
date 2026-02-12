@@ -156,15 +156,6 @@
                 {{ form|crispy }}
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check small">
-                    <input type="checkbox" class="form-check-input" id="remember">
-                    <label class="form-check-label text-muted" for="remember">Remember me</label>
-                </div>
-                <a href="#" class="small text-decoration-none fw-medium" style="color: var(--accent-color);">Forgot
-                    password?</a>
-            </div>
-
             <button type="submit" class="btn-login">
                 <span>Sign in</span>
                 <i class="bi bi-arrow-right"></i>
@@ -183,7 +174,7 @@
     const form = document.querySelector('form');
     form.addEventListener('submit', function () {
         const btn = document.querySelector('.btn-login');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signin in...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing in...';
         btn.disabled = true;
     });
 </script>
