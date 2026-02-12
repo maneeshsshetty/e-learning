@@ -6,4 +6,4 @@ class CoursesConfig(AppConfig):
     name = 'courses'
     
     def ready(self):
-        import courses.signals  # Register signal handlers
+        import courses.signals  

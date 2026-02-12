@@ -33,7 +33,6 @@ class CourseForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Customize the teacher field label to show username and email
         self.fields['teacher'].label_from_instance = lambda obj: f"{obj.username} ({obj.email})"
 
 class EnrollmentForm(forms.ModelForm):

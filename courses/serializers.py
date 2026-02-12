@@ -32,14 +32,9 @@ class CourseSerializer(serializers.ModelSerializer):
         return None
     
     def get_teacher_count(self, obj):
-        # Count unique teachers (both the course owner and offering instructors)
         teacher_ids = set()
-        
-        # Add course owner/assigned teacher
         if obj.teacher_id:
             teacher_ids.add(obj.teacher_id)
-            
-        # Add teachers from offerings
         try:
             offering_teacher_ids = obj.offerings.values_list('teacher_id', flat=True)
             teacher_ids.update(offering_teacher_ids)
@@ -116,21 +111,15 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         import uuid
-        
-        # Generate unique transaction ID
         transaction_id = f"TXN{uuid.uuid4().hex[:12].upper()}"
-        
-        # Get course price
         course_offering = validated_data['course_offering']
         amount = course_offering.course.price
-        
-        # Create payment (auto-success for dummy payment)
         payment = Payment.objects.create(
             student=self.context['request'].user,
             course_offering=course_offering,
             amount=amount,
             payment_method=validated_data['payment_method'],
-            status='success',  # Dummy payment always succeeds
+            status='success',
             transaction_id=transaction_id
         )
         return payment

@@ -19,9 +19,8 @@ def register(request):
         form = CustomUserCreationForm(request.POST) 
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False  # Require OTP verification
-            
-            # Generate 6-digit OTP
+            user.is_active = False 
+
             import random
             from django.utils import timezone
             otp = str(random.randint(100000, 999999))
@@ -29,14 +28,13 @@ def register(request):
             user.otp_created_at = timezone.now()
             user.save()
             
-            # Send OTP email using Brevo API
+           
             context = {
                 'username': user.username,
                 'otp': otp,
             }
             html_message = render_to_string('emails/otp_verification.html', context)
             
-            # Send email
             result = send_brevo_email(
                 to_email=user.email,
                 subject='Verify Your Email - Learning Platform',
@@ -44,12 +42,10 @@ def register(request):
             )
             
             if result['success']:
-                # Store user ID in session for OTP verification
                 request.session['pending_user_id'] = user.id
                 messages.success(request, f'Registration successful! Please check your email ({user.email}) for the OTP code.')
                 return redirect('verify_otp')
             else:
-                # If email fails, delete the user and show error
                 user.delete()
                 messages.error(request, f'Failed to send verification email: {result["message"]}')
                 return redirect('register')
@@ -75,16 +71,13 @@ def verify_otp(request):
             messages.error(request, 'Invalid session. Please register again.')
             return redirect('register')
         
-        # Check if OTP matches
         if user.otp != otp_entered:
             messages.error(request, 'Invalid OTP code. Please try again.')
             return render(request, 'registration/verify_otp.html')
         
-        # Check if OTP has expired (10 minutes)
         from django.utils import timezone
         from datetime import timedelta
         if user.otp_created_at:
-            # Make sure both datetimes are timezone-aware for comparison
             otp_created = user.otp_created_at
             if timezone.is_naive(otp_created):
                 otp_created = timezone.make_aware(otp_created)
@@ -92,16 +85,14 @@ def verify_otp(request):
             expiry_time = otp_created + timedelta(minutes=10)
             if timezone.now() > expiry_time:
                 messages.error(request, 'OTP has expired. Please register again.')
-                user.delete()  # Clean up expired registration
+                user.delete()
                 return redirect('register')
         
-        # OTP is valid - activate user
         user.is_active = True
-        user.otp = None  # Clear OTP
+        user.otp = None 
         user.otp_created_at = None
         user.save()
         
-        # Send welcome email using Brevo API
         context = {
             'username': user.username,
             'role': user.role,
@@ -120,11 +111,9 @@ def verify_otp(request):
         except Exception as e:
             print(f"Failed to send welcome email: {e}")
         
-        # Clear session
         if 'pending_user_id' in request.session:
             del request.session['pending_user_id']
         
-        # Log the user in
         login(request, user)
         messages.success(request, 'Your account has been verified successfully! Welcome to Learning Platform.')
         return redirect('dashboard')
@@ -167,7 +156,6 @@ def teacher_dashboard(request):
     if request.user.role != 'teacher':
         return redirect('dashboard')
     
-    # Get all offerings for this teacher
     offerings = CourseOffering.objects.filter(teacher=request.user)
     
     if request.method == 'POST':
@@ -227,42 +215,36 @@ def student_course_detail(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     offerings = CourseOffering.objects.filter(course=course)
     
-    # Check if user has already paid for this course
     has_paid = Payment.objects.filter(
         student=request.user,
         course=course,
         status='success'
     ).exists()
 
-    # Check if user is enrolled in ANY offering of this course
     is_enrolled = Enrollment.objects.filter(
         student=request.user,
         course_offering__course=course
     ).exists()
     
-    # Grant access if paid OR enrolled
     has_access = has_paid or is_enrolled
     
     if request.method == 'POST':
         offering_id = request.POST.get('offering_id')
         offering = get_object_or_404(CourseOffering, id=offering_id)
         
-        # Check if already enrolled
         if Enrollment.objects.filter(student=request.user, course_offering=offering).exists():
             messages.warning(request, 'You are already enrolled in this course offering.')
         else:
-            # Check if course is free OR user has already paid
+           
             if course.is_free or course.price == 0 or has_paid:
-                # Free course or already paid - direct enrollment
+               
                 payment = None
                 if has_paid:
-                    # Link to existing payment
                     payment = Payment.objects.filter(
                         student=request.user,
                         course=course,
                         status='success'
                     ).first()
-                    # Update payment to link to this offering
                     if payment and not payment.course_offering:
                         payment.course_offering = offering
                         payment.save()
@@ -275,7 +257,6 @@ def student_course_detail(request, course_id):
                 messages.success(request, f'Successfully enrolled in {course.title} with {offering.teacher.username}!')
                 return redirect('student_dashboard')
             else:
-                # Paid course and hasn't paid yet - redirect to payment
                 return redirect('course_payment_page', course_id=course.id)
             
     return render(request, 'dashboard/student_course_detail.html', {
@@ -293,7 +274,6 @@ def course_content_view(request, course_id):
         
     course = get_object_or_404(Course, id=course_id)
     
-    # Check access (Paid OR Enrolled)
     has_paid = Payment.objects.filter(student=request.user, course=course, status='success').exists()
     is_enrolled = Enrollment.objects.filter(student=request.user, course_offering__course=course).exists()
     
@@ -302,11 +282,7 @@ def course_content_view(request, course_id):
         return redirect('student_course_detail', course_id=course.id)
     
     offerings = CourseOffering.objects.filter(course=course).prefetch_related('contents', 'quizzes')
-    
-    # Calculate total content count
     contents_count = sum(offering.contents.count() for offering in offerings)
-
-    # Attach quiz info to offerings
     for offering in offerings:
         offering.quiz = offering.quizzes.first()
         if offering.quiz:
@@ -325,8 +301,6 @@ def course_payment_page(request, course_id):
         return redirect('dashboard')
     
     course = get_object_or_404(Course, id=course_id)
-    
-    # Check if already paid for this course
     existing_payment = Payment.objects.filter(
         student=request.user,
         course=course,
@@ -338,31 +312,24 @@ def course_payment_page(request, course_id):
         return redirect('student_course_detail', course_id=course.id)
     
     if request.method == 'POST':
-        # PayPal Payment Only
         from .paypal_service import create_payment
         from django.urls import reverse
-        
-        # Build absolute URLs for PayPal redirect
         return_url = request.build_absolute_uri(reverse('paypal_execute'))
         cancel_url = request.build_absolute_uri(reverse('paypal_cancel'))
-        
-        # Create PayPal payment
         result = create_payment(
             amount=course.price,
-            currency='USD',  # Change to 'INR' if needed
+            currency='USD',
             return_url=return_url,
             cancel_url=cancel_url,
             description=f"{course.title} - Course Access"
         )
         
         if result['success']:
-            # Store payment info in session
             request.session['pending_payment'] = {
-                'course_id': course.id,  # Changed from offering_id
+                'course_id': course.id,
                 'paypal_payment_id': result['payment_id'],
                 'amount': str(course.price)
             }
-            # Redirect to PayPal for approval
             return redirect(result['approval_url'])
         else:
             messages.error(request, f"PayPal payment creation failed: {result['error']}")
@@ -380,13 +347,10 @@ def payment_page(request, offering_id):
     
     offering = get_object_or_404(CourseOffering, id=offering_id)
     course = offering.course
-    
-    # Check if already enrolled
     if Enrollment.objects.filter(student=request.user, course_offering=offering).exists():
         messages.info(request, 'You are already enrolled in this course.')
         return redirect('student_dashboard')
     
-    # Check if already paid
     existing_payment = Payment.objects.filter(
         student=request.user, 
         course_offering=offering,
@@ -398,31 +362,25 @@ def payment_page(request, offering_id):
         return redirect('student_dashboard')
     
     if request.method == 'POST':
-        # PayPal Payment Only
         from .paypal_service import create_payment
         from django.urls import reverse
-        
-        # Build absolute URLs for PayPal redirect
         return_url = request.build_absolute_uri(reverse('paypal_execute'))
         cancel_url = request.build_absolute_uri(reverse('paypal_cancel'))
-        
-        # Create PayPal payment
         result = create_payment(
             amount=course.price,
-            currency='USD',  # Change to 'INR' if needed
+            currency='USD',
             return_url=return_url,
             cancel_url=cancel_url,
             description=f"{course.title} - {offering.semester} {offering.year}"
         )
         
         if result['success']:
-            # Store payment info in session
             request.session['pending_payment'] = {
                 'offering_id': offering.id,
                 'paypal_payment_id': result['payment_id'],
                 'amount': str(course.price)
             }
-            # Redirect to PayPal for approval
+
             return redirect(result['approval_url'])
         else:
             messages.error(request, f"PayPal payment creation failed: {result['error']}")
@@ -447,35 +405,26 @@ def paypal_execute(request):
     """Handle PayPal return after user approves payment"""
     if request.user.role != 'student':
         return redirect('dashboard')
-    
-    # Get PayPal parameters
     payment_id = request.GET.get('paymentId')
     payer_id = request.GET.get('PayerID')
-    
-    # Get pending payment from session
     pending_payment = request.session.get('pending_payment')
     
     if not pending_payment or not payment_id or not payer_id:
         messages.error(request, 'Invalid payment session.')
         return redirect('student_dashboard')
-    
-    # Execute PayPal payment
     from .paypal_service import execute_payment
     result = execute_payment(payment_id, payer_id)
     
     if result['success']:
         import uuid
         transaction_id = f"PAYPAL{uuid.uuid4().hex[:10].upper()}"
-        
-        # Check if this is a course-level payment (new flow) or offering-level (old flow)
         if 'course_id' in pending_payment:
-            # NEW FLOW: Course-level payment
             course = get_object_or_404(Course, id=pending_payment['course_id'])
             
             payment = Payment.objects.create(
                 student=request.user,
                 course=course,
-                course_offering=None,  # No offering yet - student will select teacher
+                course_offering=None, 
                 amount=pending_payment['amount'],
                 payment_method='paypal',
                 status='success',
@@ -484,15 +433,12 @@ def paypal_execute(request):
                 paypal_payment_id=payment_id,
                 paypal_payer_id=payer_id
             )
-            
-            # Clear session
             del request.session['pending_payment']
             
             messages.success(request, 'Payment completed successfully! Now select your teacher.')
             return redirect('student_course_detail', course_id=course.id)
             
         else:
-            # OLD FLOW: Offering-level payment (backward compatibility)
             offering = get_object_or_404(CourseOffering, id=pending_payment['offering_id'])
             
             payment = Payment.objects.create(
@@ -507,15 +453,11 @@ def paypal_execute(request):
                 paypal_payment_id=payment_id,
                 paypal_payer_id=payer_id
             )
-            
-            # Create enrollment
             Enrollment.objects.create(
                 student=request.user,
                 course_offering=offering,
                 payment=payment
             )
-            
-            # Clear session
             del request.session['pending_payment']
             
             messages.success(request, 'Payment completed successfully via PayPal!')
@@ -595,10 +537,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         return Payment.objects.all()
     
     def perform_create(self, serializer):
-        # Save payment
         payment = serializer.save()
-        
-        # Auto-create enrollment after successful payment
         if payment.status == 'success':
             Enrollment.objects.create(
                 student=payment.student,
@@ -606,7 +545,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payment=payment
             )
 
-# Quiz Views - Teacher
 
 @login_required
 def add_quiz(request, offering_id):
@@ -731,7 +669,7 @@ def delete_choice(request, choice_id):
     messages.success(request, 'Choice deleted.')
     return redirect('manage_quiz', quiz_id=quiz_id)
 
-# Quiz Views - Student
+
 
 @login_required
 def take_quiz(request, quiz_id):
@@ -740,7 +678,6 @@ def take_quiz(request, quiz_id):
     
     quiz = get_object_or_404(Quiz, id=quiz_id)
     
-    # Check enrollment
     is_enrolled = Enrollment.objects.filter(student=request.user, course_offering=quiz.course_offering).exists()
     if not is_enrolled:
         messages.error(request, 'You need to be enrolled to take this quiz.')
@@ -771,15 +708,12 @@ def submit_quiz(request, quiz_id):
         score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
         passed = score_percentage >= quiz.pass_percentage
         
-        # Save attempt
         attempt = StudentQuizAttempt.objects.create(
             student=request.user,
             quiz=quiz,
             score=score_percentage,
             passed=passed
         )
-        
-        # Generate Certificate if passed
         if passed:
             if not Certificate.objects.filter(student=request.user, course_offering=quiz.course_offering).exists():
                 Certificate.objects.create(

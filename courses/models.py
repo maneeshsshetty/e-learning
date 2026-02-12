@@ -10,8 +10,6 @@ class CustomUser(AbstractUser):
         ('student', 'Student'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
-    
-    # OTP Fields
     otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
 
@@ -72,7 +70,7 @@ class Payment(models.Model):
     status = models.CharField(max_length=10, choices=PAYMENT_STATUS, default='pending')
     transaction_id = models.CharField(max_length=100, unique=True)
     
-    # PayPal specific fields
+
     paypal_payment_id = models.CharField(max_length=100, blank=True, null=True)
     paypal_payer_id = models.CharField(max_length=100, blank=True, null=True)
     payment_source = models.CharField(max_length=20, default='dummy', choices=(('paypal', 'PayPal'), ('dummy', 'Dummy')))
@@ -101,7 +99,6 @@ class CourseContent(models.Model):
     course_offering = models.ForeignKey(CourseOffering, on_delete=models.CASCADE, related_name='contents')
     title = models.CharField(max_length=200)
     
-    # Video Content (Cloudinary Video Storage)
     video = models.FileField(
         upload_to='course_videos/', 
         blank=True, 
@@ -110,7 +107,7 @@ class CourseContent(models.Model):
         help_text="Upload course video"
     )
     
-    # File/Document Content (Cloudinary Raw Storage)
+
     file = models.FileField(
         upload_to='course_files/', 
         blank=True, 
@@ -119,7 +116,7 @@ class CourseContent(models.Model):
         help_text="Upload PDF or resource file"
     )
     
-    # External Link (e.g., Meet, Zoom, Docs)
+
     link = models.URLField(blank=True, null=True, help_text="External link (e.g., Google Meet)")
     
     created_at = models.DateTimeField(auto_now_add=True)

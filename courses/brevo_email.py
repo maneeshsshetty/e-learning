@@ -21,23 +21,18 @@ def send_brevo_email(to_email, subject, html_content, sender_name="Learning Plat
         dict: {'success': bool, 'message': str}
     """
     try:
-        # Configure API key authorization
         configuration = sib_api_v3_sdk.Configuration()
         configuration.api_key['api-key'] = settings.BREVO_API_KEY
-        
-        # Create an instance of the API class
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
-        # Prepare sender
+
         sender = {
             "name": sender_name,
             "email": settings.BREVO_SENDER_EMAIL
         }
         
-        # Prepare recipient
         to = [{"email": to_email}]
         
-        # Create email object
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=to,
             sender=sender,
@@ -45,7 +40,6 @@ def send_brevo_email(to_email, subject, html_content, sender_name="Learning Plat
             html_content=html_content
         )
         
-        # Send the email
         api_response = api_instance.send_transac_email(send_smtp_email)
         
         return {

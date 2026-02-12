@@ -1,114 +1,158 @@
-# 🎓 Online Learning Platform (E-Learning)
+# 🎓 Learning Platform (LMS)
 
-Welcome to the **Online Learning Platform**, a powerful and modern educational management system built with **Django** and **Django REST Framework (DRF)**.
+> A modern, full-featured Learning Management System built with Django & Django REST Framework.
 
-This project is designed with a **Hybrid Architecture**:
-- 🌐 **Dynamic UI**: Uses Django Templates for a smooth, server-side rendered experience.
-- ⚡ **Data-Driven**: Uses a REST API (DRF) to power real-time dashboards and interactive data tables.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/django-5.0%2B-green)](https://www.djangoproject.com/)
+[![Bootstrap](https://img.shields.io/badge/bootstrap-5-purple)](https://getbootstrap.com/)
 
----
+## 🚀 Overview
 
-## � Live Demo
-Visit the live application here:  
-🚀 **[https://e-learning-q536.onrender.com/](https://e-learning-q536.onrender.com/)**
+**Learning Platform** is a robust E-Learning solution designed to bridge the gap between Students, Teachers, and Administrators. It features a hybrid architecture combining the speed of server-side rendering (Django Templates) with the flexibility of a modern REST API.
 
----
-
-## 🛠️ How it Works
-
-The platform supports three distinct user roles, each with their own specialized workflow:
-
-| Role | Workflow | Key Actions |
-| :--- | :--- | :--- |
-| **Admin** | **Manage & Monitor** | Create courses, view all users, and track platform-wide growth. |
-| **Teacher** | **Instruct & Guide** | Opt-in to teach courses, manage classes, and share meeting links. |
-| **Student** | **Learn & Grow** | Browse available subjects, choose teachers, and join live classes. |
+Whether you're selling courses, managing virtual classrooms, or issuing certificates, this platform handles it all out of the box.
 
 ---
 
 ## ✨ Key Features
 
-### 🏢 Intelligent Dashboards
-Unlike traditional systems, our dashboards are "thin clients." They load the page layout first and then use **JavaScript (Fetch API)** to pull in the latest data from our backend API. This makes the experience fast and responsive.
+### 🔐 Advanced Authentication
+- **Secure Login & Registration**: Role-based access control (Admin, Teacher, Student).
+- **OTP Verification**: Email-based Two-Factor Authentication (2FA) for secure sign-ups.
+- **Session Management**: Secure session handling with auto-expiry.
 
-### 🔐 Secure Authentication & Roles
-- **CSRF Protected**: Robust security for all form submissions and API interactions.
-- **Environment Driven**: Sensitive keys and database credentials are kept safe in `.env` files.
+### 👨‍🏫 Teacher Dashboard
+- **Course Management**: Create courses, set prices, and upload thumbnails.
+- **Classroom Tools**: Manage course offerings, schedule live classes (Google Meet integration).
+- **Content Studio**: Upload video lessons, PDF resources, and external links.
+- **Quiz Builder**: Create interactive quizzes with multiple-choice questions.
 
-### 📚 Course & Classroom Integration
-- **Media Support**: Modern course icons and photo uploads.
-- **Google Meet**: Integrated fields for teachers to share live class links directly with their students.
-- **Automated Enrollments**: Simple one-click enrollment for students.
+### 👩‍🎓 Student Experience
+- **Easy Enrollment**: Browse courses and enroll instantly.
+- **Payments**: Integrated **PayPal** gateway for secure course purchases.
+- **Learning Hub**: Access course materials, videos, and resources in a clean interface.
+- **Assessments**: Take quizzes and get instant feedback.
+- **Certification**: Auto-generated **PDF Certificates** upon course completion.
+
+### �️ technical Highlights
+- **Hybrid Architecture**: HTML templates for SEO + API for dynamic data interactions.
+- **Cloud Storage**: Seamless media handling with **Cloudinary**.
+- **Transactional Emails**: Reliable email delivery via **Brevo (Sendinblue)**.
+- **PDF Generation**: Dynamic certificate generation using `xhtml2pdf`.
+- **Production Ready**: Configured for deployment on platforms like Render (PostgreSQL, Whitenoise).
 
 ---
 
 ## 🏗️ Technology Stack
 
-- **Backend Logic**: Python 3.x & Django 6.0+
-- **API Engine**: Django REST Framework (DRF)
-- **Database**: PostgreSQL (Production-ready) / SQLite (Local)
-- **UI Styling**: Bootstrap 5 + Crispy Forms
-- **Environment**: Dotenv for secure configuration
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Backend** | Python, Django | Core logic and ORM. |
+| **API** | Django REST Framework | RESTful endpoints for data exchange. |
+| **Frontend** | Bootstrap 5, Crispy Forms | Responsive, modern UI components. |
+| **Database** | PostgreSQL (Prod) / SQLite (Dev) | Relational data storage. |
+| **Payments** | PayPal REST SDK | Secure payment processing. |
+| **Email** | Brevo API | OTPs and notifications. |
+| **Storage** | Cloudinary | Asset management (Images/Videos/PDFs). |
+| **PDF** | xhtml2pdf | HTML to PDF conversion for certificates. |
 
 ---
 
-## ⚙️ Setting Up Locally
+## ⚙️ Installation & Setup
 
-Follow these steps to get the project running on your own machine.
+Follow these steps to set up the project locally.
 
-### 1. Prerequisites
-- [Python 3.10+](https://www.python.org/downloads/)
-- [Git](https://git-scm.com/downloads)
-
-### 2. Clone and Prepare
+### 1. Clone the Repository
 ```bash
 git clone <repository-url>
 cd learning-class
 ```
 
-### 3. Setup Virtual Environment
+### 2. Create Virtual Environment
 ```bash
 python -m venv venv
-# Windows:
-.\venv\Scripts\activate  
-# Linux/Mac:
-source venv/bin/activate 
+# Windows
+.\venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
 ```
 
-### 4. Install Dependencies
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Configure Secrets
-Create a `.env` file in the root folder and add your credentials:
+### 4. Configure Environment Variables
+Create a `.env` file in the root directory:
 ```env
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY=your_secure_unique_key
+# Core Django
+SECRET_KEY=your-secret-key
 DEBUG=True
-DATABASE_URL=postgresql://user:password@host:port/dbname
+
+# Database (Optional - defaults to SQLite if empty)
+DATABASE_URL=postgres://user:pass@host:5432/dbname
+
+# External Services
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=noreply@yourdomain.com
+
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_secret
+
+RENDER_EXTERNAL_HOSTNAME=  # Leave empty for local development
 ```
 
-### 6. Initialize Database
+### 5. Initialize Database
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 7. Launch
+### 6. Create Superuser (Admin)
+```bash
+python manage.py createsuperuser
+```
+
+### 7. Run Server
 ```bash
 python manage.py runserver
 ```
-Visit `http://127.0.0.1:8000/` in your browser to see the platform in action!
+Visit `http://127.0.0.1:8000/` to access the application.
 
 ---
 
-## 📂 Project Structure
-- `core_project/`: Main settings, secure configuration, and URL routing.
-- `courses/`: The heartbeat of the app—contains logic for users, courses, and the REST API.
-- `templates/`: Modern, responsive HTML layouts.
-- `static/`: Custom CSS and JavaScript for dashboard interactions.
+## � API Documentation
+
+The project includes a browsable API for developers.
+
+- **Base URL**: `/api/`
+- **Endpoints**:
+    - `/api/courses/`: List and manage courses.
+    - `/api/offerings/`: Class schedules and teacher assignments.
+    - `/api/users/`: User management.
+    - `/api/enrollments/`: Student enrollment tracking.
+    - `/api/payments/`: Transaction history.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
 ## 📝 License
-This project is built for professional training and educational purposes.
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

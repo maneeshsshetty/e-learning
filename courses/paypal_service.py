@@ -6,7 +6,7 @@ Handles PayPal payment creation, execution, and verification
 import paypalrestsdk
 from django.conf import settings
 
-# Configure PayPal SDK
+
 paypalrestsdk.configure({
     "mode": settings.PAYPAL_MODE,
     "client_id": settings.PAYPAL_CLIENT_ID,
@@ -47,7 +47,6 @@ def create_payment(amount, currency, return_url, cancel_url, description):
     })
 
     if payment.create():
-        # Payment created successfully
         approval_url = None
         for link in payment.links:
             if link.rel == "approval_url":
@@ -61,7 +60,6 @@ def create_payment(amount, currency, return_url, cancel_url, description):
             'error': None
         }
     else:
-        # Payment creation failed
         return {
             'success': False,
             'payment_id': None,
@@ -84,14 +82,13 @@ def execute_payment(payment_id, payer_id):
     payment = paypalrestsdk.Payment.find(payment_id)
     
     if payment.execute({"payer_id": payer_id}):
-        # Payment executed successfully
         return {
             'success': True,
             'payment': payment,
             'error': None
         }
     else:
-        # Payment execution failed
+
         return {
             'success': False,
             'payment': None,
