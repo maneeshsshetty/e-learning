@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from .models import Course, CourseOffering, CustomUser, Enrollment, CourseContent, Quiz, Question, Choice, StudentQuizAttempt, Certificate
-from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm, CourseContentForm, QuizForm, QuestionForm, ChoiceForm
+from .forms import CourseForm, EnrollmentForm, CustomUserCreationForm, CourseContentForm, QuizForm, QuestionForm, ChoiceForm, QuestionWithChoicesForm
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
@@ -656,15 +656,34 @@ def add_question(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, course_offering__teacher=request.user)
     
     if request.method == 'POST':
-        form = QuestionForm(request.POST)
+        form = QuestionWithChoicesForm(request.POST)
         if form.is_valid():
             question = form.save(commit=False)
             question.quiz = quiz
             question.save()
-            messages.success(request, 'Question added! Now add choices.')
+            
+            # Save Choices
+            choices_data = [
+                (form.cleaned_data['choice_1'], '1'),
+                (form.cleaned_data['choice_2'], '2'),
+                (form.cleaned_data['choice_3'], '3'),
+                (form.cleaned_data['choice_4'], '4'),
+            ]
+            
+            correct_choice_value = form.cleaned_data['correct_choice']
+            
+            for text, choice_val in choices_data:
+                if text:
+                    Choice.objects.create(
+                        question=question,
+                        text=text,
+                        is_correct=(choice_val == correct_choice_value)
+                    )
+
+            messages.success(request, 'Question and choices added!')
             return redirect('manage_quiz', quiz_id=quiz.id)
     else:
-        form = QuestionForm()
+        form = QuestionWithChoicesForm()
     
     return render(request, 'courses/question_form.html', {'form': form, 'quiz': quiz})
 

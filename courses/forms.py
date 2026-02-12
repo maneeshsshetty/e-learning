@@ -85,3 +85,17 @@ class ChoiceForm(forms.ModelForm):
             'text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Choice Text'}),
             'is_correct': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+class QuestionWithChoicesForm(QuestionForm):
+    choice_1 = forms.CharField(max_length=255, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Option 1'}))
+    choice_2 = forms.CharField(max_length=255, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Option 2'}))
+    choice_3 = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Option 3 (Optional)'}))
+    choice_4 = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Option 4 (Optional)'}))
+    correct_choice = forms.ChoiceField(
+        choices=[('1', 'Option 1'), ('2', 'Option 2'), ('3', 'Option 3'), ('4', 'Option 4')],
+        widget=forms.RadioSelect(attrs={'class': 'list-style-none'}),
+        initial='1'
+    )
+
+    class Meta(QuestionForm.Meta):
+        fields = ['text', 'question_type', 'order', 'choice_1', 'choice_2', 'choice_3', 'choice_4', 'correct_choice']

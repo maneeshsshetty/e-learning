@@ -1,10 +1,15 @@
 from rest_framework import serializers
-from .models import CustomUser, Course, CourseOffering, Enrollment, Payment
+from .models import CustomUser, Course, CourseOffering, Enrollment, Payment, CourseContent
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'role']
+
+class CourseContentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseContent
+        fields = ['id', 'title', 'video', 'file', 'link', 'created_at']
 
 class CourseSerializer(serializers.ModelSerializer):
     teacher_name = serializers.SerializerMethodField()
@@ -89,10 +94,11 @@ class CourseOfferingSerializer(serializers.ModelSerializer):
     course_title = serializers.ReadOnlyField(source='course.title')
     teacher_name = serializers.ReadOnlyField(source='teacher.username')
     quiz_id = serializers.SerializerMethodField()
+    contents = CourseContentSerializer(many=True, read_only=True)
     
     class Meta:
         model = CourseOffering
-        fields = ['id', 'course', 'course_title', 'teacher', 'teacher_name', 'semester', 'year', 'start_date', 'end_date', 'meet_link', 'class_description', 'quiz_id']
+        fields = ['id', 'course', 'course_title', 'teacher', 'teacher_name', 'semester', 'year', 'start_date', 'end_date', 'meet_link', 'class_description', 'quiz_id', 'contents']
 
     def get_quiz_id(self, obj):
         quiz = obj.quizzes.first()

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <title>Certificate</title>
@@ -14,172 +13,95 @@
             font-family: Helvetica, Arial, sans-serif;
             font-size: 16px;
             color: #333;
-        }
-
-        /* Layout Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        td {
-            vertical-align: top;
-        }
-
-        /* Content Wrapper */
-        .wrapper {
-            border: 5px solid #4285F4;
-            padding: 30px;
-            height: 650px;
-            /* Fixed height to keep it on one page */
-            position: relative;
-        }
-
-        /* Header */
-        .header-table td {
-            vertical-align: middle;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .badge {
-            text-align: right;
-            font-size: 14px;
-            color: #1a73e8;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        /* Main Content */
-        .content {
-            margin-top: 50px;
             text-align: center;
         }
 
-        .title {
-            font-size: 36px;
+        .wrapper {
+            border: 10px double #4285F4;
+            padding: 40px;
+            height: 600px; /* Adjust as needed */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header {
+            font-size: 40px;
             font-weight: bold;
             color: #2c3e50;
             text-transform: uppercase;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
         }
 
-        .subtitle {
-            font-size: 18px;
+        .sub-header {
+            font-size: 20px;
             color: #777;
             margin-bottom: 40px;
         }
 
         .student-name {
-            font-size: 48px;
+            font-size: 50px;
             font-weight: bold;
             color: #1a73e8;
             margin: 20px 0;
-            border-bottom: 1px solid #ccc;
+            padding: 10px;
+            border-bottom: 2px solid #ddd;
             display: inline-block;
-            padding: 0 20px 10px;
         }
 
-        .description {
-            font-size: 20px;
-            line-height: 1.5;
-            margin: 30px 0;
+        .course-text {
+            font-size: 22px;
+            margin-top: 30px;
         }
 
         .course-name {
+            font-size: 30px;
             font-weight: bold;
             color: #333;
+            margin: 10px 0;
         }
 
-        /* Footer / Signatures */
-        .footer {
-            margin-top: 60px;
-        }
-
-        .sig-line {
-            border-top: 1px solid #333;
-            margin-top: 50px;
-            padding-top: 10px;
-            font-weight: bold;
-        }
-
-        .sig-title {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .meta {
-            text-align: right;
-            font-size: 12px;
-            color: #999;
+        .date-text {
+            font-size: 18px;
+            color: #555;
             margin-top: 20px;
+        }
+
+        .footer {
+            margin-top: 80px;
+            font-size: 14px;
+            color: #999;
         }
     </style>
 </head>
-
 <body>
     <div class="wrapper">
-        <!-- Header -->
-        <table class="header-table">
-            <tr>
-                <td class="logo">Learning Platform</td>
-                <td class="badge">Verified Certificate</td>
-            </tr>
-        </table>
+        <div class="header">Certificate of Completion</div>
+        
+        <div class="sub-header">This is to certify that</div>
 
-        <!-- Main Content -->
-        <div class="content">
-            <div class="title">Certificate of Completion</div>
-            <div class="subtitle">This is to certify that</div>
-
-            <div class="student-name">
-                {{ certificate.student.first_name }} {{ certificate.student.last_name }}
-            </div>
-
-            <div class="description">
-                has successfully completed the course requirements for<br>
-                <span class="course-name">{{ certificate.course_offering.course.title }}</span>
-            </div>
+        <div class="student-name">
+            {{ certificate.student.username }}
         </div>
 
-        <!-- Signatures -->
-        <div class="footer">
-            <table>
-                <tr>
-                    <td width="30%" align="center">
-                        <div class="sig-line">
-                            {{ certificate.course_offering.teacher.first_name }} {{
-                            certificate.course_offering.teacher.last_name }}
-                        </div>
-                        <div class="sig-title">Lead Instructor</div>
-                    </td>
-                    <td width="40%"></td> <!-- Spacer -->
-                    <td width="30%" align="center">
-                        <div class="sig-line">
-                            Learning Platform
-                        </div>
-                        <div class="sig-title">Program Director</div>
-                    </td>
-                </tr>
-            </table>
+        <div class="course-text">
+            has successfully completed the course
+        </div>
 
-            <table style="margin-top: 30px;">
-                <tr>
-                    <td align="left" style="font-size: 10px; color: #aaa;">
-                        Certificate ID: {{ certificate.certificate_id }}<br>
-                        Issued: {{ certificate.issued_at|date:"F j, Y" }}
-                    </td>
-                </tr>
-            </table>
+        <div class="course-name">
+            {{ certificate.course_offering.course.title }}
+        </div>
+
+        <div class="date-text">
+            on {{ certificate.issued_at|date:"F j, Y" }}
+        </div>
+
+        <div class="footer">
+            Certificate ID: {{ certificate.certificate_id }} | Learning Platform
         </div>
     </div>
 </body>
-
 </html>

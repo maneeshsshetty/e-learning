@@ -117,8 +117,8 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 class="fw-bold text-dark mb-1"><i
-                                            class="bi bi-trophy text-warning me-2"></i>Course Quiz: {{
-                                        offering.quiz.title }}</h5>
+                                            class="bi bi-trophy text-warning me-2"></i>Course Quiz:
+                                        {{ offering.quiz.title }}</h5>
                                     <p class="text-muted small mb-0">{{ offering.quiz.description|truncatechars:100 }}
                                     </p>
                                 </div>
@@ -140,10 +140,11 @@
                                         class="btn btn-primary rounded-pill px-4 shadow-sm">
                                         <i class="bi bi-pencil-square me-1"></i> Take Quiz
                                     </a>
-                                    <button onclick="confirmQuiz('{% url 'take_quiz' offering.quiz.id %}')"
+                                    <a href="{% url 'take_quiz' offering.quiz.id %}"
+                                        onclick="return confirm('To complete this course and get certified, you need to pass the quiz. Do you want to take the quiz now?')"
                                         class="btn btn-outline-success rounded-pill px-4 shadow-sm ms-2">
                                         <i class="bi bi-check-circle me-1"></i> Complete Course
-                                    </button>
+                                    </a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -166,11 +167,5 @@
     </div>
 </div>
 
-<script>
-    function confirmQuiz(url) {
-        if (confirm("To complete this course and get certified, you need to pass the quiz. Do you want to take the quiz now?")) {
-            window.location.href = url;
-        }
-    }
-</script>
+
 {% endblock %}

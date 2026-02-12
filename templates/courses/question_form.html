@@ -1,20 +1,113 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3>Add Question to {{ quiz.title }}</h3>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0 fw-bold">{% if quiz %}Add Question to: {{ quiz.title }}{% else %}Edit Question{% endif %}</h4>
             </div>
-            <div class="card-body">
-                <form method="post">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
                     {% csrf_token %}
-                    {{ form|crispy }}
-                    <div class="d-grid gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary">Add Question</button>
-                        <a href="{% url 'manage_quiz' quiz.id %}" class="btn btn-secondary">Cancel</a>
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Question Details -->
+                    <div class="mb-4">
+                        <label for="{{ form.text.id_for_label }}" class="form-label fw-bold">Question Text</label>
+                        {{ form.text }}
+                        {% if form.text.errors %}
+                        <div class="text-danger small mt-1">{{ form.text.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.question_type.id_for_label }}" class="form-label fw-bold">Question Type</label>
+                            {{ form.question_type }}
+                            {% if form.question_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.question_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.order.id_for_label }}" class="form-label fw-bold">Order / Sequence</label>
+                            {{ form.order }}
+                            {% if form.order.errors %}
+                            <div class="text-danger small mt-1">{{ form.order.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Answer Options -->
+                    <h5 class="mb-3 fw-bold">Answer Options</h5>
+                    <p class="text-muted small mb-3">
+                        Enter the options below and select the radio button next to the correct answer.
+                    </p>
+
+                    <!-- Choice 1 -->
+                    <div class="input-group mb-3">
+                        <div class="input-group-text bg-light">
+                            <input class="form-check-input mt-0" type="radio" name="correct_choice" value="1" required 
+                            {% if form.correct_choice.value == "1" %}checked{% endif %}>
+                        </div>
+                        {{ form.choice_1 }}
+                    </div>
+                    {% if form.choice_1.errors %}
+                    <div class="text-danger small mb-3">{{ form.choice_1.errors }}</div>
+                    {% endif %}
+
+                    <!-- Choice 2 -->
+                    <div class="input-group mb-3">
+                        <div class="input-group-text bg-light">
+                            <input class="form-check-input mt-0" type="radio" name="correct_choice" value="2" 
+                            {% if form.correct_choice.value == "2" %}checked{% endif %}>
+                        </div>
+                        {{ form.choice_2 }}
+                    </div>
+                    {% if form.choice_2.errors %}
+                    <div class="text-danger small mb-3">{{ form.choice_2.errors }}</div>
+                    {% endif %}
+
+                    <!-- Choice 3 -->
+                    <div class="input-group mb-3">
+                        <div class="input-group-text bg-light">
+                            <input class="form-check-input mt-0" type="radio" name="correct_choice" value="3" 
+                            {% if form.correct_choice.value == "3" %}checked{% endif %}>
+                        </div>
+                        {{ form.choice_3 }}
+                    </div>
+                    {% if form.choice_3.errors %}
+                    <div class="text-danger small mb-3">{{ form.choice_3.errors }}</div>
+                    {% endif %}
+
+                    <!-- Choice 4 -->
+                    <div class="input-group mb-3">
+                        <div class="input-group-text bg-light">
+                            <input class="form-check-input mt-0" type="radio" name="correct_choice" value="4" 
+                            {% if form.correct_choice.value == "4" %}checked{% endif %}>
+                        </div>
+                        {{ form.choice_4 }}
+                    </div>
+                    {% if form.choice_4.errors %}
+                    <div class="text-danger small mb-3">{{ form.choice_4.errors }}</div>
+                    {% endif %}
+
+                    {% if form.correct_choice.errors %}
+                    <div class="alert alert-danger py-2 mt-2">
+                        {{ form.correct_choice.errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% if quiz %}{% url 'manage_quiz' quiz.id %}{% else %}javascript:history.back(){% endif %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">Save Question</button>
                     </div>
                 </form>
             </div>
